@@ -1,7 +1,8 @@
+// src/contexts/AuthContext.jsx
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import API, { setAuthToken } from '../api';
-const AuthContext = createContext();
 
+const AuthContext = createContext();
 export const useAuth = () => useContext(AuthContext);
 
 export function AuthProvider({ children }) {
@@ -10,40 +11,55 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (token) {
-      setAuthToken(token);
-      API.get('/auth/me')
-        .then(res => setUser(res.data))
-        .catch(() => {
-          setUser(null);
-          setToken(null);
-          localStorage.removeItem('token');
-          setAuthToken(null);
-        })
-        .finally(() => setLoading(false));
-    } else {
-      setLoading(false);
+    async function fetchMe() {
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+      try {
+        setAuthToken(token);
+        const res = await API.get('/auth/me');
+        setUser(res.data);
+      } catch (err) {
+        console.error('fetchMe error', err.response?.data || err.message);
+        localStorage.removeItem('token');
+        setToken(null);
+        setUser(null);
+        setAuthToken(null);
+      } finally {
+        setLoading(false);
+      }
     }
+    fetchMe();
   }, [token]);
 
   const login = async (email, password) => {
-    const res = await API.post('/auth/login', { email, password });
-    const { token: t, user: u } = res.data;
-    localStorage.setItem('token', t);
-    setToken(t);
-    setAuthToken(t);
-    setUser(u);
-    return { user: u };
+    try {
+      const res = await API.post('/auth/login', { email, password });
+      const { token: t, user: u } = res.data;
+      localStorage.setItem('token', t);
+      setToken(t);
+      setAuthToken(t);
+      setUser(u);
+      return { user: u };
+    } catch (err) {
+      // rethrow so pages can show messages
+      throw err;
+    }
   };
 
   const register = async (payload) => {
-    const res = await API.post('/auth/register', payload);
-    const { token: t, user: u } = res.data;
-    localStorage.setItem('token', t);
-    setToken(t);
-    setAuthToken(t);
-    setUser(u);
-    return { user: u };
+    try {
+      const res = await API.post('/auth/register', payload);
+      const { token: t, user: u } = res.data;
+      localStorage.setItem('token', t);
+      setToken(t);
+      setAuthToken(t);
+      setUser(u);
+      return { user: u };
+    } catch (err) {
+      throw err;
+    }
   };
 
   const logout = () => {
