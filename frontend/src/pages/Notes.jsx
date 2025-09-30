@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
+import Loader from "../components/Loader";
+
 import {
   BookOpen,
   Filter,
@@ -13,8 +15,11 @@ import {
 } from "lucide-react";
 import StarField from "../components/StarField";
 import API from "../api";
+import Navbar from "../components/Navbar";
 
 export default function Notes() {
+const [downloading, setDownloading] = useState(false);
+
   const { user } = useAuth();
   const [notes, setNotes] = useState([]);
   const [filteredNotes, setFilteredNotes] = useState([]);
@@ -118,23 +123,51 @@ export default function Notes() {
   const clearFilters = () => {
     setFilters({ year: "", branch: "", subject: "", search: "" });
   };
-const handleDownload = async (fileUrl, filename) => {
+const handleDownload = async (noteId, fileUrl, filename) => {
+  if (!fileUrl) return alert("File URL missing");
+
+  setDownloading(true); // Show loader
+
   try {
+    // Fetch the file first
     const response = await fetch(fileUrl);
+    if (!response.ok) throw new Error("File download failed");
+
     const blob = await response.blob();
     const blobUrl = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
+
+    // Create temporary link for download
+    const link = document.createElement("a");
     link.href = blobUrl;
     link.download = filename;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     window.URL.revokeObjectURL(blobUrl);
+
+    // Increment download count after successful download
+    await API.post(`/notes/${noteId}/download`);
+
+    // Update local state
+    setNotes(prevNotes =>
+      prevNotes.map(n =>
+        n._id === noteId ? { ...n, downloads: (n.downloads || 0) + 1 } : n
+      )
+    );
+    setFilteredNotes(prevNotes =>
+      prevNotes.map(n =>
+        n._id === noteId ? { ...n, downloads: (n.downloads || 0) + 1 } : n
+      )
+    );
+
   } catch (error) {
-    console.error('Download failed:', error);
-    alert('Download failed. Please try again.');
+    console.error("Download failed:", error);
+    alert(error.response?.data?.message || "Download failed");
+  } finally {
+    setDownloading(false); // Hide loader
   }
 };
+
 
   if (loading) {
     return (
@@ -150,7 +183,6 @@ const handleDownload = async (fileUrl, filename) => {
   return (
     <div className="min-h-screen bg-gray-900 text-white relative overflow-hidden">
       <StarField />
-
       <div className="relative z-10 max-w-7xl mx-auto px-4 py-12">
         {/* Header */}
         <div className="text-center mb-12">
@@ -294,22 +326,28 @@ const handleDownload = async (fileUrl, filename) => {
               </div> 
                 
            <div className="flex gap-2">
-  {/* Download */}
-  <button
-    onClick={() => handleDownload(note.fileUrl, cleanFilename)}
-    className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 px-4 py-2 rounded-lg transition-all duration-200 transform hover:scale-105 group"
-  >
-    <Download className="w-4 h-4 group-hover:translate-y-1 transition-transform" />
-    <span className="text-sm font-medium">Download</span>
-  </button>
+  {downloading && <Loader message="Downloading your file..." />}
+
+<button
+  onClick={() =>
+    handleDownload(
+      note._id,
+      note.fileUrl,
+      note.title
+        ? note.title.replace(/[^a-z0-9]/gi, "_").toLowerCase() + ".pdf"
+        : "downloaded_file.pdf"
+    )
+  }
+  className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 px-4 py-2 rounded-lg transition-all duration-200 transform hover:scale-105 group"
+>
+  <Download className="w-4 h-4 group-hover:translate-y-1 transition-transform" />
+  <span className="text-sm font-medium">Download</span>
+</button>
+
+
 
   {/* View */}
-  <button
-    onClick={() => window.open(note.fileUrl, "_blank")}
-    className="flex items-center justify-center gap-2 bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg transition-colors duration-200"
-  >
-    <Eye className="w-4 h-4" />
-  </button>
+ 
 
   {/* Delete button (only for admin) */}
   {user?.email === "priytoshshahi90@gmail.com" && (

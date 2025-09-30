@@ -92,3 +92,24 @@ exports.deleteNote = async (req, res) => {
   }
 };
 
+
+exports.incrementDownload = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const note = await Notes.findByIdAndUpdate(
+      id,
+      { $inc: { downloads: 1 } },
+      { new: true }
+    );
+
+    if (!note) {
+      return res.status(404).json({ message: "Note not found" });
+    }
+
+    res.json({ message: "Download count updated", downloads: note.downloads });
+  } catch (error) {
+    console.error("Failed to increment download:", error);
+    res.status(500).json({ message: "Failed to update download count" });
+  }
+};
