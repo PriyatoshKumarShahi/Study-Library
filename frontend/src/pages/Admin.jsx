@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Upload, FileText, BookOpen, Users, BarChart3, Settings, Plus, X, Check, AlertCircle } from 'lucide-react';
 import StarField from '../components/StarField';
+import API from '../api';
+
 
 export default function Admin() {
   const { user } = useAuth();
@@ -35,6 +37,7 @@ export default function Admin() {
   // Check if user is admin
   const isAdmin = user?.email === 'priytoshshahi90@gmail.com';
 
+  
   useEffect(() => {
     if (!isAdmin) {
       setMessage({ type: 'error', text: 'Access denied. Admin privileges required.' });
@@ -67,54 +70,60 @@ export default function Admin() {
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setUploading(true);
-    setMessage(null);
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setUploading(true);
+  setMessage(null);
 
-    try {
-      const uploadData = new FormData();
-      uploadData.append('file', formData.file);
-      uploadData.append('title', formData.title);
-      uploadData.append('subject', formData.subject);
-      uploadData.append('year', formData.year);
-      uploadData.append('branch', formData.branch);
-      uploadData.append('description', formData.description);
-      uploadData.append('type', uploadType);
-      
-      if (uploadType === 'papers') {
-        uploadData.append('semester', formData.semester);
-        uploadData.append('examYear', formData.examYear);
-      }
+  try {
+    const uploadData = new FormData();
+    uploadData.append('file', formData.file);
+    uploadData.append('title', formData.title);
+    uploadData.append('subject', formData.subject);
+    uploadData.append('year', formData.year);
+    uploadData.append('branch', formData.branch);
+    uploadData.append('description', formData.description);
 
-      // Mock upload - replace with actual API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      setMessage({ type: 'success', text: `${uploadType === 'notes' ? 'Notes' : 'Paper'} uploaded successfully!` });
-      
-      // Reset form
-      setFormData({
-        title: '',
-        subject: '',
-        year: '',
-        branch: '',
-        semester: '',
-        examYear: '',
-        description: '',
-        file: null
-      });
-      
-      // Reset file input
-      const fileInput = document.getElementById('file-upload');
-      if (fileInput) fileInput.value = '';
-      
-    } catch (error) {
-      console.error('Upload error:', error);
-      setMessage({ type: 'error', text: 'Upload failed. Please try again.' });
-    } finally {
-      setUploading(false);
+    if (uploadType === 'papers') {
+      uploadData.append('semester', formData.semester);
+      uploadData.append('examYear', formData.examYear);
     }
-  };
+
+    // Use Axios with your API base URL
+    const endpoint = uploadType === 'notes' ? '/notes/upload' : '/papers/upload';
+
+    const response = await API.post(endpoint, uploadData, {
+  headers: { 
+    'Content-Type': 'multipart/form-data',
+    'Authorization': `Bearer ${localStorage.getItem('token')}` // <-- add this
+  }
+});
+
+    setMessage({ type: 'success', text: `${uploadType === 'notes' ? 'Notes' : 'Paper'} uploaded successfully!` });
+
+    // Reset form
+    setFormData({
+      title: '',
+      subject: '',
+      year: '',
+      branch: '',
+      semester: '',
+      examYear: '',
+      description: '',
+      file: null
+    });
+
+    const fileInput = document.getElementById('file-upload');
+    if (fileInput) fileInput.value = '';
+
+  } catch (error) {
+    console.error('Upload error:', error);
+    const errMsg = error.response?.data?.message || error.message || 'Upload failed';
+    setMessage({ type: 'error', text: errMsg });
+  } finally {
+    setUploading(false);
+  }
+};
 
   if (!isAdmin) {
     return (

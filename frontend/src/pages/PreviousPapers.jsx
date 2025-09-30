@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { FileText, Filter, Download, Search, Calendar, GraduationCap, Clock, Star, Eye } from 'lucide-react';
 import StarField from '../components/StarField';
+import API from "../api";
 
 export default function PreviousPapers() {
   const { user } = useAuth();
@@ -36,67 +37,20 @@ export default function PreviousPapers() {
     applyFilters();
   }, [filters, papers]);
 
-  const fetchPapers = async () => {
-    try {
-      // Mock data - replace with actual API call
-      const mockPapers = [
-        {
-          id: 1,
-          title: 'Data Structures Mid-Term Exam',
-          subject: 'Data Structures',
-          year: '2nd Year',
-          branch: 'Computer Science Engineering',
-          examYear: '2023',
-          semester: '3rd Semester',
-          uploadedBy: 'Dr. Smith',
-          uploadDate: '2024-01-15',
-          fileUrl: '#',
-          hasSolutions: true,
-          duration: '3 hours',
-          downloads: 342,
-          rating: 4.9
-        },
-        {
-          id: 2,
-          title: 'Database Systems Final Exam',
-          subject: 'DBMS',
-          year: '3rd Year',
-          branch: 'Computer Science Engineering',
-          examYear: '2023',
-          semester: '5th Semester',
-          uploadedBy: 'Prof. Johnson',
-          uploadDate: '2024-01-12',
-          fileUrl: '#',
-          hasSolutions: true,
-          duration: '3 hours',
-          downloads: 278,
-          rating: 4.7
-        },
-        {
-          id: 3,
-          title: 'Digital Electronics Mid-Term',
-          subject: 'Digital Electronics',
-          year: '2nd Year',
-          branch: 'Electronics & Communication',
-          examYear: '2022',
-          semester: '4th Semester',
-          uploadedBy: 'Dr. Wilson',
-          uploadDate: '2024-01-10',
-          fileUrl: '#',
-          hasSolutions: false,
-          duration: '2 hours',
-          downloads: 195,
-          rating: 4.5
-        }
-      ];
-      setPapers(mockPapers);
-      setFilteredPapers(mockPapers);
-    } catch (error) {
-      console.error('Error fetching papers:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+ const fetchPapers = async () => {
+  try {
+    const res = await fetch('/api/papers');
+    const data = await res.json();
+    setPapers(data);          // ✅ store papers
+    setFilteredPapers(data);  // ✅ store filtered papers
+  } catch (error) {
+    console.error('Error fetching papers:', error);
+  } finally {
+    setLoading(false);
+  }
+};
+
+
 
   const applyFilters = () => {
     let filtered = papers;
@@ -123,6 +77,22 @@ export default function PreviousPapers() {
 
     setFilteredPapers(filtered);
   };
+  const handleDelete = async (id, cloudinaryId) => {
+  if (!window.confirm("Are you sure you want to delete this paper?")) return;
+  try {
+    await API.delete(`/papers/${id}`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+      data: { cloudinaryId },
+    });
+    setPapers((prev) => prev.filter((paper) => paper._id !== id));
+    setFilteredPapers((prev) => prev.filter((paper) => paper._id !== id));
+  } catch (err) {
+    console.error("Delete failed:", err);
+    alert(err.response?.data?.message || "Delete failed");
+  }
+};
 
   const handleFilterChange = (key, value) => {
     setFilters(prev => ({ ...prev, [key]: value }));
@@ -130,6 +100,23 @@ export default function PreviousPapers() {
 
   const clearFilters = () => {
     setFilters({ year: '', branch: '', examYear: '', semester: '', search: '' });
+  };
+  const handleDownload = async (fileUrl, filename) => {
+    try {
+      const response = await fetch(fileUrl);
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error("Download failed:", error);
+      alert("Download failed. Please try again.");
+    }
   };
 
   if (loading) {
@@ -248,60 +235,89 @@ export default function PreviousPapers() {
 
         {/* Papers Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredPapers.map((paper) => (
-            <div key={paper.id} className="group bg-gray-800/80 backdrop-blur-sm border border-gray-700 rounded-2xl p-6 hover:border-purple-500/50 transition-all duration-300 transform hover:-translate-y-2 shadow-2xl hover:shadow-purple-500/10">
-              <div className="flex items-start justify-between mb-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center group-hover:rotate-6 transition-transform duration-300">
-                  <FileText className="w-6 h-6 text-white" />
-                </div>
-                <div className="flex items-center gap-1">
-                  <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                  <span className="text-sm text-gray-300">{paper.rating}</span>
-                </div>
-              </div>
+{filteredPapers.map((paper) => {
+  const cleanFilename = paper.title
+    ? paper.title.replace(/[^a-z0-9]/gi, "_").toLowerCase() + ".pdf"
+    : "previous_paper.pdf";
 
-              <h3 className="text-xl font-bold mb-2 text-white group-hover:text-purple-400 transition-colors duration-300">
-                {paper.title}
-              </h3>
-              
-              <div className="space-y-2 mb-4">
-                <div className="flex items-center gap-2 text-sm">
-                  <GraduationCap className="w-4 h-4 text-purple-400" />
-                  <span className="text-gray-300">{paper.year} • {paper.semester}</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Calendar className="w-4 h-4 text-blue-400" />
-                  <span className="text-gray-300">Exam Year: {paper.examYear}</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Clock className="w-4 h-4 text-green-400" />
-                  <span className="text-gray-300">Duration: {paper.duration}</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Download className="w-4 h-4 text-orange-400" />
-                  <span className="text-gray-300">{paper.downloads} downloads</span>
-                </div>
-              </div>
+  return (
+    <div
+      key={paper._id}
+      className="group bg-gray-800/80 backdrop-blur-sm border border-gray-700 rounded-2xl p-6 hover:border-purple-500/50 transition-all duration-300 transform hover:-translate-y-2 shadow-2xl hover:shadow-purple-500/10"
+    >
+      <div className="flex items-start justify-between mb-4">
+        <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center group-hover:rotate-6 transition-transform duration-300">
+          <FileText className="w-6 h-6 text-white" />
+        </div>
+        <div className="flex items-center gap-1">
+          <Star className="w-4 h-4 text-yellow-400 fill-current" />
+          <span className="text-sm text-gray-300">{paper.rating}</span>
+        </div>
+      </div>
 
-              {paper.hasSolutions && (
-                <div className="mb-4">
-                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-300 border border-green-500/30">
-                    ✓ Solutions Available
-                  </span>
-                </div>
-              )}
+      <h3 className="text-xl font-bold mb-2 text-white group-hover:text-purple-400 transition-colors duration-300">
+        {paper.title}
+      </h3>
+      
+      <div className="space-y-2 mb-4">
+        <div className="flex items-center gap-2 text-sm">
+          <GraduationCap className="w-4 h-4 text-purple-400" />
+          <span className="text-gray-300">{paper.year} • {paper.semester}</span>
+        </div>
+        <div className="flex items-center gap-2 text-sm">
+          <Calendar className="w-4 h-4 text-blue-400" />
+          <span className="text-gray-300">Exam Year: {paper.examYear}</span>
+        </div>
+        <div className="flex items-center gap-2 text-sm">
+          <Clock className="w-4 h-4 text-green-400" />
+          <span className="text-gray-300">Duration: {paper.duration}</span>
+        </div>
+        <div className="flex items-center gap-2 text-sm">
+          <Download className="w-4 h-4 text-orange-400" />
+          <span className="text-gray-300">{paper.downloads} downloads</span>
+        </div>
+      </div>
 
-              <div className="flex gap-2">
-                <button className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 px-4 py-2 rounded-lg transition-all duration-200 transform hover:scale-105 group">
-                  <Download className="w-4 h-4 group-hover:translate-y-1 transition-transform" />
-                  <span className="text-sm font-medium">Download</span>
-                </button>
-                <button className="flex items-center justify-center gap-2 bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg transition-colors duration-200">
-                  <Eye className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          ))}
+      {paper.hasSolutions && (
+        <div className="mb-4">
+          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-300 border border-green-500/30">
+            ✓ Solutions Available
+          </span>
+        </div>
+      )}
+
+      <div className="flex gap-2">
+        {/* Download */}
+        <button
+          onClick={() => handleDownload(paper.fileUrl, cleanFilename)}
+          className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 px-4 py-2 rounded-lg transition-all duration-200 transform hover:scale-105 group"
+        >
+          <Download className="w-4 h-4 group-hover:translate-y-1 transition-transform" />
+          <span className="text-sm font-medium">Download</span>
+        </button>
+
+        {/* View */}
+        <button
+          onClick={() => window.open(paper.fileUrl, "_blank")}
+          className="flex items-center justify-center gap-2 bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg transition-colors duration-200"
+        >
+          <Eye className="w-4 h-4" />
+        </button>
+
+        {/* Delete button (only for admin) */}
+        {user?.email === "priytoshshahi90@gmail.com" && (
+          <button
+            onClick={() => handleDelete(paper._id, paper.cloudinaryId)}
+            className="flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg transition-colors duration-200"
+          >
+            Delete
+          </button>
+        )}
+      </div>
+    </div>
+  );
+})}
+
         </div>
 
         {filteredPapers.length === 0 && (
