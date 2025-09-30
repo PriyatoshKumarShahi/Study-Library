@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { uploadPapers, getPapers, deletePaper } = require("../controllers/papersController");
+const { uploadPapers, getPapers, deletePaper , incrementDownload } = require("../controllers/papersController");
 const authenticateToken = require("../middleware/auth");
 const requireAdmin = require("../middleware/admin");
 const upload = require("../config/upload");
@@ -17,5 +17,7 @@ router.get("/", getPapers);
 
 // Delete paper route (admin only)
 router.delete("/:id", authenticateToken, requireAdmin, deletePaper);
+router.post('/:id/download', incrementDownload);
+
 
 module.exports = router;

@@ -3,12 +3,16 @@ import { useAuth } from '../contexts/AuthContext';
 import { FileText, Filter, Download, Search, Calendar, GraduationCap, Clock, Star, Eye } from 'lucide-react';
 import StarField from '../components/StarField';
 import API from "../api";
+import Loader from "../components/Loader";
+
 
 export default function PreviousPapers() {
   const { user } = useAuth();
   const [papers, setPapers] = useState([]);
   const [filteredPapers, setFilteredPapers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [downloading, setDownloading] = useState(false);
+  
   const [filters, setFilters] = useState({
     year: '',
     branch: '',
@@ -101,23 +105,51 @@ export default function PreviousPapers() {
   const clearFilters = () => {
     setFilters({ year: '', branch: '', examYear: '', semester: '', search: '' });
   };
-  const handleDownload = async (fileUrl, filename) => {
-    try {
-      const response = await fetch(fileUrl);
-      const blob = await response.blob();
-      const blobUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = blobUrl;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(blobUrl);
-    } catch (error) {
-      console.error("Download failed:", error);
-      alert("Download failed. Please try again.");
-    }
-  };
+  const handleDownload = async (paperId, fileUrl, filename) => {
+  if (!fileUrl) return alert("File URL missing");
+
+  setDownloading(true); // Show loader
+
+  try {
+    // Fetch the file
+    const response = await fetch(fileUrl);
+    if (!response.ok) throw new Error("File download failed");
+
+    const blob = await response.blob();
+    const blobUrl = window.URL.createObjectURL(blob);
+
+    // Create temporary link for download
+    const link = document.createElement("a");
+    link.href = blobUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(blobUrl);
+
+    // Increment download count in backend
+    await API.post(`/papers/${paperId}/download`);
+
+    // Update local state
+    setPapers(prevPapers =>
+      prevPapers.map(p =>
+        p._id === paperId ? { ...p, downloads: (p.downloads || 0) + 1 } : p
+      )
+    );
+    setFilteredPapers(prevPapers =>
+      prevPapers.map(p =>
+        p._id === paperId ? { ...p, downloads: (p.downloads || 0) + 1 } : p
+      )
+    );
+
+  } catch (error) {
+    console.error("Download failed:", error);
+    alert(error.response?.data?.message || "Download failed");
+  } finally {
+    setDownloading(false); // Hide loader
+  }
+};
+
 
   if (loading) {
     return (
@@ -133,7 +165,12 @@ export default function PreviousPapers() {
   return (
     <div className="min-h-screen bg-gray-900 text-white relative overflow-hidden">
       <StarField />
-      
+       {downloading && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+    <Loader message="Downloading your file..." />
+  </div>
+)}
+
       <div className="relative z-10 max-w-7xl mx-auto px-4 py-12">
         {/* Header */}
         <div className="text-center mb-12">
@@ -245,14 +282,13 @@ export default function PreviousPapers() {
       key={paper._id}
       className="group bg-gray-800/80 backdrop-blur-sm border border-gray-700 rounded-2xl p-6 hover:border-purple-500/50 transition-all duration-300 transform hover:-translate-y-2 shadow-2xl hover:shadow-purple-500/10"
     >
+
+
       <div className="flex items-start justify-between mb-4">
         <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center group-hover:rotate-6 transition-transform duration-300">
           <FileText className="w-6 h-6 text-white" />
         </div>
-        <div className="flex items-center gap-1">
-          <Star className="w-4 h-4 text-yellow-400 fill-current" />
-          <span className="text-sm text-gray-300">{paper.rating}</span>
-        </div>
+       
       </div>
 
       <h3 className="text-xl font-bold mb-2 text-white group-hover:text-purple-400 transition-colors duration-300">
@@ -287,22 +323,25 @@ export default function PreviousPapers() {
       )}
 
       <div className="flex gap-2">
-        {/* Download */}
-        <button
-          onClick={() => handleDownload(paper.fileUrl, cleanFilename)}
-          className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 px-4 py-2 rounded-lg transition-all duration-200 transform hover:scale-105 group"
-        >
-          <Download className="w-4 h-4 group-hover:translate-y-1 transition-transform" />
-          <span className="text-sm font-medium">Download</span>
-        </button>
+          {downloading && <Loader message="Downloading your file..." />}
+        
+       <button
+  onClick={() =>
+    handleDownload(
+      paper._id,
+      paper.fileUrl,
+      paper.title
+        ? paper.title.replace(/[^a-z0-9]/gi, "_").toLowerCase() + ".pdf"
+        : "previous_paper.pdf"
+    )
+  }
+  className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 px-4 py-2 rounded-lg transition-all duration-200 transform hover:scale-105 group"
+>
+  <Download className="w-4 h-4 group-hover:translate-y-1 transition-transform" />
+  <span className="text-sm font-medium">Download</span>
+</button>
 
-        {/* View */}
-        <button
-          onClick={() => window.open(paper.fileUrl, "_blank")}
-          className="flex items-center justify-center gap-2 bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg transition-colors duration-200"
-        >
-          <Eye className="w-4 h-4" />
-        </button>
+        
 
         {/* Delete button (only for admin) */}
         {user?.email === "priytoshshahi90@gmail.com" && (

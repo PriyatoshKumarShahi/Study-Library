@@ -15,7 +15,6 @@ import {
 } from "lucide-react";
 import StarField from "../components/StarField";
 import API from "../api";
-import Navbar from "../components/Navbar";
 
 export default function Notes() {
 const [downloading, setDownloading] = useState(false);
@@ -183,6 +182,12 @@ const handleDownload = async (noteId, fileUrl, filename) => {
   return (
     <div className="min-h-screen bg-gray-900 text-white relative overflow-hidden">
       <StarField />
+      {downloading && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+    <Loader message="Downloading your file..." />
+  </div>
+)}
+
       <div className="relative z-10 max-w-7xl mx-auto px-4 py-12">
         {/* Header */}
         <div className="text-center mb-12">
@@ -288,12 +293,12 @@ const handleDownload = async (noteId, fileUrl, filename) => {
                 <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center group-hover:rotate-6 transition-transform duration-300">
                   <FileText className="w-6 h-6 text-white" />
                 </div>
-                <div className="flex items-center gap-1">
+{/*                 <div className="flex items-center gap-1">
                   <Star className="w-4 h-4 text-yellow-400 fill-current" />
                   <span className="text-sm text-gray-300">
                     {note.rating || 0}
                   </span>
-                </div>
+                </div> */}
               </div>
 
               <h3 className="text-xl font-bold mb-2 text-white group-hover:text-blue-400 transition-colors duration-300">
