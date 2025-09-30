@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
-import Loader from "../components/Loader";
-
 import {
   BookOpen,
   Filter,
@@ -15,14 +13,14 @@ import {
 } from "lucide-react";
 import StarField from "../components/StarField";
 import API from "../api";
+import Loader from "../components/Loader";
 
 export default function Notes() {
-const [downloading, setDownloading] = useState(false);
-
   const { user } = useAuth();
   const [notes, setNotes] = useState([]);
   const [filteredNotes, setFilteredNotes] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [downloading , setDownloading] = useState(false)
   const [filters, setFilters] = useState({
     year: "",
     branch: "",
@@ -111,7 +109,7 @@ const [downloading, setDownloading] = useState(false);
       setFilteredNotes(filteredNotes.filter((note) => note._id !== id));
     } catch (err) {
       console.error("Delete failed:", err);
-      alert(err.response?.data?.message || "Delete failed");
+      // alert(err.response?.data?.message || "Delete failed");
     }
   };
 
@@ -128,7 +126,7 @@ const handleDownload = async (noteId, fileUrl, filename) => {
   setDownloading(true); // Show loader
 
   try {
-    // Fetch the file first
+    // Fetch the file
     const response = await fetch(fileUrl);
     if (!response.ok) throw new Error("File download failed");
 
@@ -144,7 +142,7 @@ const handleDownload = async (noteId, fileUrl, filename) => {
     document.body.removeChild(link);
     window.URL.revokeObjectURL(blobUrl);
 
-    // Increment download count after successful download
+    // Increment download count in backend
     await API.post(`/notes/${noteId}/download`);
 
     // Update local state
@@ -182,11 +180,11 @@ const handleDownload = async (noteId, fileUrl, filename) => {
   return (
     <div className="min-h-screen bg-gray-900 text-white relative overflow-hidden">
       <StarField />
-      {downloading && (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
-    <Loader message="Downloading your file..." />
-  </div>
-)}
+        {downloading && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+          <Loader message="Downloading your file..." />
+        </div>
+      )}
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 py-12">
         {/* Header */}
@@ -293,12 +291,7 @@ const handleDownload = async (noteId, fileUrl, filename) => {
                 <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center group-hover:rotate-6 transition-transform duration-300">
                   <FileText className="w-6 h-6 text-white" />
                 </div>
-{/*                 <div className="flex items-center gap-1">
-                  <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                  <span className="text-sm text-gray-300">
-                    {note.rating || 0}
-                  </span>
-                </div> */}
+                
               </div>
 
               <h3 className="text-xl font-bold mb-2 text-white group-hover:text-blue-400 transition-colors duration-300">
@@ -331,18 +324,9 @@ const handleDownload = async (noteId, fileUrl, filename) => {
               </div> 
                 
            <div className="flex gap-2">
-  {downloading && <Loader message="Downloading your file..." />}
 
 <button
-  onClick={() =>
-    handleDownload(
-      note._id,
-      note.fileUrl,
-      note.title
-        ? note.title.replace(/[^a-z0-9]/gi, "_").toLowerCase() + ".pdf"
-        : "downloaded_file.pdf"
-    )
-  }
+  onClick={() => handleDownload(note._id, note.fileUrl, cleanFilename)}
   className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 px-4 py-2 rounded-lg transition-all duration-200 transform hover:scale-105 group"
 >
   <Download className="w-4 h-4 group-hover:translate-y-1 transition-transform" />
@@ -350,10 +334,7 @@ const handleDownload = async (noteId, fileUrl, filename) => {
 </button>
 
 
-
-  {/* View */}
- 
-
+  
   {/* Delete button (only for admin) */}
   {user?.email === "priytoshshahi90@gmail.com" && (
     <button

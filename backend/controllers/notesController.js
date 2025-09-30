@@ -1,11 +1,13 @@
 const Notes = require("../models/Notes");
 const cloudinary = require("../config/cloudinary");
 
+// Upload Notes
 exports.uploadNotes = async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ message: "No file uploaded" });
 
     const { title, subject, year, branch, description } = req.body;
+
     const result = await new Promise((resolve, reject) => {
       cloudinary.uploader.upload_stream(
         {
@@ -14,10 +16,7 @@ exports.uploadNotes = async (req, res) => {
           use_filename: true,
           unique_filename: false,
         },
-        (err, result) => {
-          if (err) reject(err);
-          else resolve(result);
-        }
+        (err, result) => (err ? reject(err) : resolve(result))
       ).end(req.file.buffer);
     });
 
@@ -50,6 +49,7 @@ exports.uploadNotes = async (req, res) => {
   }
 };
 
+// Get Notes
 exports.getNotes = async (req, res) => {
   try {
     const { year, branch, subject, search } = req.query;
@@ -74,6 +74,7 @@ exports.getNotes = async (req, res) => {
   }
 };
 
+// Delete Note
 exports.deleteNote = async (req, res) => {
   try {
     const { id } = req.params;
@@ -92,11 +93,17 @@ exports.deleteNote = async (req, res) => {
   }
 };
 
-
+// Increment Download & Track User
+// Increment download count for notes
 exports.incrementDownload = async (req, res) => {
   try {
     const { id } = req.params;
-    
+
+    if (!id) {
+      return res.status(400).json({ message: "Note ID is required" });
+    }
+
+    // Only increment downloads
     const note = await Notes.findByIdAndUpdate(
       id,
       { $inc: { downloads: 1 } },
@@ -107,9 +114,13 @@ exports.incrementDownload = async (req, res) => {
       return res.status(404).json({ message: "Note not found" });
     }
 
-    res.json({ message: "Download count updated", downloads: note.downloads });
+    res.json({
+      message: "Download count updated",
+      downloads: note.downloads
+    });
   } catch (error) {
     console.error("Failed to increment download:", error);
     res.status(500).json({ message: "Failed to update download count" });
   }
 };
+
