@@ -14,6 +14,7 @@ import {
 import StarField from "../components/StarField";
 import API from "../api";
 import Loader from "../components/Loader";
+import { toast } from "react-toastify";
 
 export default function Notes() {
   const { user } = useAuth();
@@ -21,6 +22,8 @@ export default function Notes() {
   const [filteredNotes, setFilteredNotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [downloading , setDownloading] = useState(false)
+  const [deletingId, setDeletingId] = useState(null);
+
   const [filters, setFilters] = useState({
     year: "",
     branch: "",
@@ -96,22 +99,31 @@ export default function Notes() {
     setFilteredNotes(filtered);
   };
 
-  const handleDelete = async (id, cloudinaryId) => {
-    if (!window.confirm("Are you sure you want to delete this note?")) return;
-    try {
-      await API.delete(`/notes/${id}`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        data: { cloudinaryId },
-      });
-      setNotes(notes.filter((note) => note._id !== id));
-      setFilteredNotes(filteredNotes.filter((note) => note._id !== id));
-    } catch (err) {
-      console.error("Delete failed:", err);
-      // alert(err.response?.data?.message || "Delete failed");
-    }
-  };
+ const handleDelete = async (id, cloudinaryId) => {
+  if (!window.confirm("Are you sure you want to delete this note?")) return;
+
+  setDeletingId(id); // show loader for this note
+  toast.info("Deleting file...");
+
+  try {
+    await API.delete(`/notes/${id}`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+      data: { cloudinaryId },
+    });
+
+    setNotes((prev) => prev.filter((note) => note._id !== id));
+    setFilteredNotes((prev) => prev.filter((note) => note._id !== id));
+
+    toast.success("File deleted successfully!!");
+  } catch (err) {
+    console.error("Delete failed:", err);
+    toast.error(err.response?.data?.message || "Failed to delete!!");
+  } finally {
+    setDeletingId(null); 
+  }
+};;
 
   const handleFilterChange = (key, value) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
@@ -121,9 +133,10 @@ export default function Notes() {
     setFilters({ year: "", branch: "", subject: "", search: "" });
   };
 const handleDownload = async (noteId, fileUrl, filename) => {
-  if (!fileUrl) return alert("File URL missing");
+  if (!fileUrl) return toast.error("File URL missing");
 
   setDownloading(true); // Show loader
+  toast.info("Downloading started...");
 
   try {
     // Fetch the file
@@ -156,10 +169,11 @@ const handleDownload = async (noteId, fileUrl, filename) => {
         n._id === noteId ? { ...n, downloads: (n.downloads || 0) + 1 } : n
       )
     );
+     toast.success("Download completed");
 
   } catch (error) {
     console.error("Download failed:", error);
-    alert(error.response?.data?.message || "Download failed");
+     toast.error(err.response?.data?.message || "Download failed");
   } finally {
     setDownloading(false); // Hide loader
   }
@@ -338,10 +352,11 @@ const handleDownload = async (noteId, fileUrl, filename) => {
   {/* Delete button (only for admin) */}
   {user?.email === "priytoshshahi90@gmail.com" && (
     <button
-      onClick={() => handleDelete(note._id, note.cloudinaryId)}
+       onClick={() => handleDelete(note._id, note.cloudinaryId)}
+  disabled={deletingId === note._id}
       className="flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg transition-colors duration-200"
     >
-      Delete
+     {deletingId === note._id ? "Deleting..." : "Delete"}
     </button>
   )}
 </div>

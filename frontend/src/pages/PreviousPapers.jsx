@@ -4,6 +4,8 @@ import { FileText, Filter, Download, Search, Calendar, GraduationCap, Clock, Sta
 import StarField from '../components/StarField';
 import API from "../api";
 import Loader from "../components/Loader";
+import { toast } from "react-toastify";
+
 
 
 export default function PreviousPapers() {
@@ -12,6 +14,8 @@ export default function PreviousPapers() {
   const [filteredPapers, setFilteredPapers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
+  
   
   const [filters, setFilters] = useState({
     year: '',
@@ -83,6 +87,8 @@ export default function PreviousPapers() {
   };
   const handleDelete = async (id, cloudinaryId) => {
   if (!window.confirm("Are you sure you want to delete this paper?")) return;
+  setDeletingId(id); 
+    toast.info("Deleting file...");
   try {
     await API.delete(`/papers/${id}`, {
       headers: {
@@ -92,9 +98,13 @@ export default function PreviousPapers() {
     });
     setPapers((prev) => prev.filter((paper) => paper._id !== id));
     setFilteredPapers((prev) => prev.filter((paper) => paper._id !== id));
+    toast.success("File deleted successfully!!");
+    
   } catch (err) {
     console.error("Delete failed:", err);
-    alert(err.response?.data?.message || "Delete failed");
+    toast.error(err.response?.data?.message || "Failed to delete!!");
+  } finally {
+    setDeletingId(null); 
   }
 };
 
@@ -106,9 +116,10 @@ export default function PreviousPapers() {
     setFilters({ year: '', branch: '', examYear: '', semester: '', search: '' });
   };
   const handleDownload = async (paperId, fileUrl, filename) => {
-  if (!fileUrl) return alert("File URL missing");
+   if (!fileUrl) return toast.error("File URL missing");
 
   setDownloading(true); // Show loader
+  toast.info("Downloading started...");
 
   try {
     // Fetch the file
@@ -141,10 +152,12 @@ export default function PreviousPapers() {
         p._id === paperId ? { ...p, downloads: (p.downloads || 0) + 1 } : p
       )
     );
+     toast.success("Download completed");
 
   } catch (error) {
     console.error("Download failed:", error);
-    alert(error.response?.data?.message || "Download failed");
+    toast.error(err.response?.data?.message || "Download failed");
+   
   } finally {
     setDownloading(false); // Hide loader
   }
@@ -285,7 +298,7 @@ export default function PreviousPapers() {
 
 
       <div className="flex items-start justify-between mb-4">
-        <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center group-hover:rotate-6 transition-transform duration-300">
+        <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center group-hover:rotate-6 transition-transform duration-300">
           <FileText className="w-6 h-6 text-white" />
         </div>
        
@@ -323,7 +336,6 @@ export default function PreviousPapers() {
       )}
 
       <div className="flex gap-2">
-          {downloading && <Loader message="Downloading your file..." />}
         
        <button
   onClick={() =>
@@ -335,7 +347,7 @@ export default function PreviousPapers() {
         : "previous_paper.pdf"
     )
   }
-  className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 px-4 py-2 rounded-lg transition-all duration-200 transform hover:scale-105 group"
+  className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 px-4 py-2 rounded-lg transition-all duration-200 transform hover:scale-105 group"
 >
   <Download className="w-4 h-4 group-hover:translate-y-1 transition-transform" />
   <span className="text-sm font-medium">Download</span>
@@ -347,9 +359,11 @@ export default function PreviousPapers() {
         {user?.email === "priytoshshahi90@gmail.com" && (
           <button
             onClick={() => handleDelete(paper._id, paper.cloudinaryId)}
+            disabled={deletingId === paper._id}
+
             className="flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg transition-colors duration-200"
           >
-            Delete
+            {deletingId === paper._id ? "Deleting..." : "Delete"}
           </button>
         )}
       </div>

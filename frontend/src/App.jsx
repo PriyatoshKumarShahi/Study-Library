@@ -11,6 +11,8 @@ import Home from './pages/HomePage';
 import Notes from './pages/Notes';
 import PreviousPapers from './pages/PreviousPapers';
 import Admin from './pages/Admin';
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 function Layout({ children }) {
   const location = useLocation();
@@ -33,10 +35,11 @@ export default function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-             <Route path="/notes" element={<Notes />} />
+            <Route path="/notes" element={<Notes />} />
             <Route path="/papers" element={<PreviousPapers />} />
             <Route path="/admin" element={<Admin />} />
           </Routes>
+          <ToastContainer position="top-right" autoClose={3000}  />
         </Layout>
       </BrowserRouter>
     </AuthProvider>
