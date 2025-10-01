@@ -1,31 +1,78 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { GraduationCap, User, LogOut, Home, UserPlus, LogIn, BookOpen, FileText, MessageCircle, TrendingUp, Settings } from 'lucide-react';
+import { GraduationCap, LogOut } from 'lucide-react';
+import { useState, useEffect } from 'react';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Track active section for highlighting
+  const [activeSection, setActiveSection] = useState("");
+
+ useEffect(() => {
+  const handleScroll = () => {
+    const sections = ["hero", "about", "features", "filtering"];
+    let current = "";
+    for (let sec of sections) {
+      const el = document.getElementById(sec);
+      if (el) {
+        const rect = el.getBoundingClientRect();
+        if (rect.top <= 150 && rect.bottom >= 150) {
+          current = sec;
+          break;
+        }
+      }
+    }
+    setActiveSection(current);
+  };
+
+  if (location.pathname === "/") {
+    window.addEventListener("scroll", handleScroll);
+    handleScroll(); // initialize
+  } else {
+    // reset active section when not on home page
+    setActiveSection("");
+  }
+
+  return () => {
+    window.removeEventListener("scroll", handleScroll);
+  };
+}, [location.pathname]);
+
+
   const scrollToSection = (sectionId) => {
-    // If not on home page, navigate to home first
-    if (location.pathname !== '/') {
-      navigate('/');
-      // Wait for navigation to complete, then scroll
+    if (location.pathname !== "/") {
+      navigate("/");
       setTimeout(() => {
         const element = document.getElementById(sectionId);
         if (element) {
-          element.scrollIntoView({ behavior: 'smooth' });
+          element.scrollIntoView({ behavior: "smooth" });
         }
       }, 100);
     } else {
-      // Already on home page, just scroll
       const element = document.getElementById(sectionId);
       if (element) {
-        element.scrollIntoView({ behavior: 'smooth' });
+        element.scrollIntoView({ behavior: "smooth" });
       }
     }
+    setActiveSection(sectionId);
   };
+
+  const linkClasses = (path) =>
+    `transition-colors duration-200 ${
+      location.pathname === path
+        ? "text-blue-400 font-semibold"
+        : "text-gray-300 hover:text-white"
+    }`;
+
+  const sectionClasses = (section) =>
+    `cursor-pointer transition-colors duration-200 ${
+      activeSection === section
+        ? "text-blue-400 font-semibold"
+        : "text-gray-300 hover:text-white"
+    }`;
 
   return (
     <nav className="bg-gray-800/95 backdrop-blur-sm text-white shadow-2xl border-b border-gray-700/50 sticky top-0 z-50">
@@ -44,96 +91,51 @@ export default function Navbar() {
 
           {/* Navigation Links */}
           <div className="flex items-center gap-6">
-            {/* Navigation Menu */}
+            {/* Section navigation (Home, About, Features, Resources) */}
             <div className="hidden md:flex items-center gap-6">
-              <button 
-                onClick={() => scrollToSection('hero')}
-                className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors duration-200 group"
-              >
-                <Home className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                <span>Home</span>
-              </button>
-              
-              <button 
-                onClick={() => scrollToSection('about')}
-                className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors duration-200 group"
-              >
-                <BookOpen className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                <span>About</span>
-              </button>
-              
-              <button 
-                onClick={() => scrollToSection('features')}
-                className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors duration-200 group"
-              >
-                <TrendingUp className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                <span>Features</span>
-              </button>
-              
-              <button 
-                onClick={() => scrollToSection('filtering')}
-                className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors duration-200 group"
-              >
-                <FileText className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                <span>Resources</span>
-              </button>
+              <span onClick={() => scrollToSection("hero")} className={sectionClasses("hero")}>
+                Home
+              </span>
+              <span onClick={() => scrollToSection("about")} className={sectionClasses("about")}>
+                About
+              </span>
+              <span onClick={() => scrollToSection("features")} className={sectionClasses("features")}>
+                Features
+              </span>
+              <span onClick={() => scrollToSection("filtering")} className={sectionClasses("filtering")}>
+                Resources
+              </span>
             </div>
 
-            {/* Mobile Home Link */}
-            <Link 
-              to="/" 
-              className="md:hidden flex items-center gap-2 text-gray-300 hover:text-white transition-colors duration-200 group"
-            >
-              <Home className="w-4 h-4 group-hover:scale-110 transition-transform" />
-              <span className="hidden sm:inline">Home</span>
-            </Link>
-            
             {user && (
               <>
-                <Link 
-                  to="/notes" 
-                  className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors duration-200 group"
-                >
-                  <BookOpen className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                  <span>Notes</span>
+                <Link to="/notes" className={linkClasses("/notes")}>
+                  Notes
                 </Link>
-                
-                <Link 
-                  to="/papers" 
-                  className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors duration-200 group"
-                >
-                  <FileText className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                  <span>Papers</span>
+                <Link to="/papers" className={linkClasses("/papers")}>
+                  Papers
                 </Link>
-                
-                {user.email === 'priytoshshahi90@gmail.com' && (
-                  <Link 
-                    to="/admin" 
-                    className="flex items-center gap-2 text-yellow-400 hover:text-yellow-300 transition-colors duration-200 group"
-                  >
-                    <Settings className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                    <span>Admin</span>
+                {user.email === "priytoshshahi90@gmail.com" && (
+                  <Link to="/admin" className={linkClasses("/admin")}>
+                    Admin
                   </Link>
                 )}
               </>
             )}
 
-            {/* User-specific Links */}
             {user ? (
               <>
-                <Link 
-                  to="/profile" 
-                  className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors duration-200 group"
-                >
-                  <User className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                  <span className="hidden sm:inline">Profile</span>
+                <Link to="/profile" className={linkClasses("/profile")}>
+                  Profile
                 </Link>
-                
                 <div className="flex items-center gap-3">
-                  <span className="hidden md:inline text-sm text-gray-400">
-                    Welcome, <span className="text-blue-400 font-medium">{user.name}</span>
-                  </span>
-                  <button 
+                  {/* Compact Welcome */}
+                  <div className="hidden md:flex flex-col text-sm text-gray-400 leading-tight text-left">
+  <span>Welcome</span>
+  <span className="text-blue-400 font-medium">{user.name}</span>
+</div>
+
+                  <button
                     onClick={logout}
                     className="flex items-center gap-2 bg-red-600/80 hover:bg-red-700 px-3 py-2 rounded-lg transition-colors duration-200 text-sm group"
                   >
@@ -144,20 +146,18 @@ export default function Navbar() {
               </>
             ) : (
               <>
-                <Link 
-                  to="/login" 
-                  className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors duration-200 group"
-                >
-                  <LogIn className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                  <span>Login</span>
+                <Link to="/login" className={linkClasses("/login")}>
+                  Login
                 </Link>
-                
-                <Link 
-                  to="/register" 
-                  className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 px-4 py-2 rounded-lg transition-all duration-200 transform hover:scale-105 group"
+                <Link
+                  to="/register"
+                  className={`px-4 py-2 rounded-lg transition-all duration-200 transform hover:scale-105 ${
+                    location.pathname === "/register"
+                      ? "bg-gradient-to-r from-blue-700 to-purple-700 text-white"
+                      : "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                  }`}
                 >
-                  <UserPlus className="w-4 h-4 group-hover:rotate-12 transition-transform" />
-                  <span>Register</span>
+                  Register
                 </Link>
               </>
             )}

@@ -8,20 +8,35 @@ export default function Register() {
   const { register } = useAuth();
   const nav = useNavigate();
   const [form, setForm] = useState({ name: '', email: '', password: '', role: 'student' });
+  const [facultyForm, setFacultyForm] = useState({ department: '', code: '' });
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  const handleFacultyChange = (e) => setFacultyForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
+
+    // Faculty code verification
+    if (form.role === 'faculty' && facultyForm.code !== 'ABESEC') {
+      setError('Invalid faculty code!');
+      return;
+    }
+
     setLoading(true);
     try {
-      await register(form);
+      const payload = { ...form };
+      if (form.role === 'faculty'){
+
+        payload.department = facultyForm.department;
+      payload.code = facultyForm.code; 
+      }
+      await register(payload); // Call backend
       nav('/');
     } catch (err) {
-      console.error('Register failed:', err.response?.data || err.message);
+      console.error(err);
       setError(err.response?.data?.message || 'Registration failed');
     } finally {
       setLoading(false);
@@ -30,14 +45,13 @@ export default function Register() {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white relative overflow-hidden">
-           <StarField />
-     
+      <StarField />
 
-      {/* Registration Form */}
-      <div className="relative z-10 min-h-screen flex items-center justify-center px-4 py-12">
+      <div className="relative z-10 flex items-center justify-center min-h-screen px-4">
         <div className="w-full max-w-md">
+
           {/* Header */}
-          <div className="text-center mb-8">
+          <div className="text-center mb-6">
             <div className="flex justify-center mb-4">
               <div className="relative">
                 <GraduationCap className="w-16 h-16 text-blue-400 animate-bounce" />
@@ -50,20 +64,44 @@ export default function Register() {
             <p className="text-gray-400">Create your account and start your learning journey</p>
           </div>
 
-          {/* Form Container */}
+          {/* Form Card */}
           <div className="bg-gray-800/80 backdrop-blur-sm border border-gray-700 rounded-2xl p-8 shadow-2xl">
             {error && (
-              <div className="bg-red-900/50 border border-red-700 text-red-200 p-4 rounded-lg mb-6 animate-shake">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-red-400 rounded-full"></div>
-                  {error}
-                </div>
+              <div className="bg-red-900/50 border border-red-700 text-red-200 p-4 rounded-lg mb-4 animate-shake">
+                {error}
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Name Input */}
-              <div className="space-y-2">
+            {/* Role Selection */}
+            <div className="flex gap-4 mb-4 justify-center">
+              <label className="cursor-pointer">
+                <input
+                  type="radio"
+                  name="role"
+                  value="student"
+                  checked={form.role === 'student'}
+                  onChange={handleChange}
+                  className="mr-2"
+                />
+                Student
+              </label>
+              <label className="cursor-pointer">
+                <input
+                  type="radio"
+                  name="role"
+                  value="faculty"
+                  checked={form.role === 'faculty'}
+                  onChange={handleChange}
+                  className="mr-2"
+                />
+                Faculty
+              </label>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+
+              {/* Name */}
+              <div className="space-y-1">
                 <label className="text-sm font-medium text-gray-300">Full Name</label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -72,15 +110,15 @@ export default function Register() {
                     placeholder="Enter your full name"
                     value={form.name}
                     onChange={handleChange}
-                    className="w-full bg-gray-700/50 border border-gray-600 text-white pl-11 pr-4 py-3 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 placeholder-gray-400"
+                    className="w-full bg-gray-700/50 border border-gray-600 text-white pl-11 pr-4 py-3 rounded-lg"
                     required
                   />
                 </div>
               </div>
 
-              {/* Email Input */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-300">Email Address</label>
+              {/* Email */}
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-gray-300">Email</label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
@@ -89,47 +127,58 @@ export default function Register() {
                     placeholder="Enter your email"
                     value={form.email}
                     onChange={handleChange}
-                    className="w-full bg-gray-700/50 border border-gray-600 text-white pl-11 pr-4 py-3 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 placeholder-gray-400"
+                    className="w-full bg-gray-700/50 border border-gray-600 text-white pl-11 pr-4 py-3 rounded-lg"
                     required
                   />
                 </div>
               </div>
 
-              {/* Password Input */}
-              <div className="space-y-2">
+              {/* Password */}
+              <div className="space-y-1">
                 <label className="text-sm font-medium text-gray-300">Password</label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
                     name="password"
                     type="password"
-                    placeholder="Create a strong password"
+                    placeholder="Enter your password"
                     value={form.password}
                     onChange={handleChange}
-                    className="w-full bg-gray-700/50 border border-gray-600 text-white pl-11 pr-4 py-3 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 placeholder-gray-400"
+                    className="w-full bg-gray-700/50 border border-gray-600 text-white pl-11 pr-4 py-3 rounded-lg"
                     required
                   />
                 </div>
               </div>
 
-              {/* Role Selection */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-300">Account Type</label>
-                <div className="relative">
-                  <BookOpen className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <select
-                    name="role"
-                    value={form.role}
-                    onChange={handleChange}
-                    className="w-full bg-gray-700/50 border border-gray-600 text-white pl-11 pr-4 py-3 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 appearance-none"
-                  >
-                    <option value="student">Student</option>
-                    <option value="faculty">Faculty</option>
-                  </select>
-                  <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
+              {/* Faculty Fields (Animated) */}
+              <div className={`overflow-hidden transition-all duration-500 ${form.role === 'faculty' ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0'}`}>
+                <div className="space-y-1 mt-2">
+                  <label className="text-sm font-medium text-gray-300">Department</label>
+                  <div className="relative">
+                    <BookOpen className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      name="department"
+                      placeholder="Enter department"
+                      value={facultyForm.department}
+                      onChange={handleFacultyChange}
+                      className="w-full bg-gray-700/50 border border-gray-600 text-white pl-11 pr-4 py-3 rounded-lg"
+                      required={form.role === 'faculty'}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1 mt-2">
+                  <label className="text-sm font-medium text-gray-300">Special Code</label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      name="code"
+                      placeholder="Enter special code"
+                      value={facultyForm.code}
+                      onChange={handleFacultyChange}
+                      className="w-full bg-gray-700/50 border border-gray-600 text-white pl-11 pr-4 py-3 rounded-lg"
+                      required={form.role === 'faculty'}
+                    />
                   </div>
                 </div>
               </div>
@@ -157,13 +206,10 @@ export default function Register() {
             </form>
 
             {/* Login Link */}
-            <div className="mt-8 text-center">
+            <div className="mt-6 text-center">
               <p className="text-gray-400">
                 Already have an account?{' '}
-                <Link 
-                  to="/login" 
-                  className="text-blue-400 hover:text-blue-300 font-medium transition-colors duration-200 hover:underline"
-                >
+                <Link to="/login" className="text-blue-400 hover:text-blue-300 font-medium transition-colors duration-200 hover:underline">
                   Sign in here
                 </Link>
               </p>
@@ -172,10 +218,7 @@ export default function Register() {
 
           {/* Back to Home */}
           <div className="text-center mt-6">
-            <Link 
-              to="/" 
-              className="text-gray-400 hover:text-white transition-colors duration-200 text-sm"
-            >
+            <Link to="/" className="text-gray-400 hover:text-white transition-colors duration-200 text-sm">
               ← Back to Home
             </Link>
           </div>

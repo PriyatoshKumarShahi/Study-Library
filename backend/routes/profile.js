@@ -17,6 +17,7 @@ router.get('/', auth, async (req, res) => {
 });
 
 // Update profile (name, profile fields, optional password)
+// Update profile
 router.put('/', auth, async (req, res) => {
   try {
     const { name, password, profile } = req.body;
@@ -24,9 +25,17 @@ router.put('/', auth, async (req, res) => {
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     if (name) user.name = name;
+
     if (profile && typeof profile === 'object') {
-      user.profile = { ...user.profile.toObject(), ...profile };
+      if (user.role === 'faculty') {
+        // Prevent updating year for faculty
+        const { year, ...rest } = profile;
+        user.profile = { ...user.profile.toObject(), ...rest };
+      } else {
+        user.profile = { ...user.profile.toObject(), ...profile };
+      }
     }
+
     if (password) {
       const salt = await bcrypt.genSalt(10);
       user.password = await bcrypt.hash(password, salt);
@@ -41,5 +50,6 @@ router.put('/', auth, async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 });
+
 
 module.exports = router;

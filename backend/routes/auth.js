@@ -6,10 +6,18 @@ const User = require('../models/User');
 const auth = require('../middleware/auth');
 
 // Register
+// Register
 router.post('/register', async (req, res) => {
   try {
-    const { name, email, password, role } = req.body;
-    if (!name || !email || !password) return res.status(400).json({ message: 'Missing fields' });
+    const { name, email, password, role, department, code } = req.body;
+    if (!name || !email || !password) 
+      return res.status(400).json({ message: 'Missing fields' });
+
+    // Faculty code verification
+    if (role === 'faculty') {
+      if (!department || !code) return res.status(400).json({ message: 'Department and code required for faculty' });
+      if (code !== 'ABESEC') return res.status(400).json({ message: 'Invalid faculty code' });
+    }
 
     const existing = await User.findOne({ email });
     if (existing) return res.status(400).json({ message: 'Email already registered' });
@@ -21,8 +29,12 @@ router.post('/register', async (req, res) => {
       name,
       email,
       password: hashed,
-      role: role || 'student'
+      role: role || 'student',
+      profile: role === 'faculty' 
+        ? { department }        // only department for faculty
+        : { department: department || '', year: '', bio: '', contact: '' } // students can have year
     });
+
     await user.save();
 
     const payload = { id: user._id, role: user.role };
@@ -36,6 +48,7 @@ router.post('/register', async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 });
+
 
 // Login
 router.post('/login', async (req, res) => {

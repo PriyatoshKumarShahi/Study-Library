@@ -16,8 +16,8 @@ export default function Profile() {
         name: user.name || '',
         profile: {
           bio: user.profile?.bio || '',
-          department: user.profile?.department || '',
-          year: user.profile?.year || '',
+          department: user.profile?.department || user.department || '',
+          year: user.role === 'faculty' ? '' : user.profile?.year || '',
           contact: user.profile?.contact || ''
         }
       });
@@ -63,9 +63,9 @@ export default function Profile() {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white relative overflow-hidden">
-           <StarField />
-    
+      <StarField />
       <div className="relative z-10 max-w-4xl mx-auto px-4 py-12">
+
         {/* Success/Error Message */}
         {msg && (
           <div className={`mb-6 p-4 rounded-lg border ${
@@ -144,15 +144,17 @@ export default function Profile() {
                       </p>
                     </div>
                     
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-400 flex items-center gap-2">
-                        <Calendar className="w-4 h-4" />
-                        Year
-                      </label>
-                      <p className="text-white bg-gray-700/50 p-3 rounded-lg">
-                        {user.profile?.year || 'Not specified'}
-                      </p>
-                    </div>
+                    {user.role !== 'faculty' && (
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-400 flex items-center gap-2">
+                          <Calendar className="w-4 h-4" />
+                          Year
+                        </label>
+                        <p className="text-white bg-gray-700/50 p-3 rounded-lg">
+                          {user.profile?.year || 'Not specified'}
+                        </p>
+                      </div>
+                    )}
                   </div>
                   
                   <div className="space-y-2">
@@ -189,35 +191,39 @@ export default function Profile() {
                   </div>
 
                   <div className="grid md:grid-cols-2 gap-4">
+                    {/* Department - Editable for all */}
                     <div className="space-y-2">
                       <label className="text-sm font-medium text-gray-300">Department</label>
                       <input
                         name="department"
                         value={form.profile.department}
                         onChange={onChange}
-                        placeholder="e.g., Computer Science"
+                        placeholder="Enter your department"
                         className="w-full bg-gray-700/50 border border-gray-600 text-white p-3 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                       />
                     </div>
-                    
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-300">Year</label>
-                      <select
-                        name="year"
-                        value={form.profile.year}
-                        onChange={onChange}
-                        className="w-full bg-gray-700/50 border border-gray-600 text-white p-3 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-                      >
-                        <option value="">Select Year</option>
-                        <option value="1st Year">1st Year</option>
-                        <option value="2nd Year">2nd Year</option>
-                        <option value="3rd Year">3rd Year</option>
-                        <option value="4th Year">4th Year</option>
-                        <option value="Graduate">Graduate</option>
-                      </select>
-                    </div>
+
+                    {/* Only show Year for students */}
+                    {user.role !== 'faculty' && (
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-300">Year</label>
+                        <select
+                          name="year"
+                          value={form.profile.year}
+                          onChange={onChange}
+                          className="w-full bg-gray-700/50 border border-gray-600 text-white p-3 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                        >
+                          <option value="">Select Year</option>
+                          <option value="1st Year">1st Year</option>
+                          <option value="2nd Year">2nd Year</option>
+                          <option value="3rd Year">3rd Year</option>
+                          <option value="4th Year">4th Year</option>
+                          <option value="Graduate">Graduate</option>
+                        </select>
+                      </div>
+                    )}
                   </div>
-                  
+
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-gray-300">Contact</label>
                     <input
@@ -228,7 +234,7 @@ export default function Profile() {
                       className="w-full bg-gray-700/50 border border-gray-600 text-white p-3 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-gray-300">Bio</label>
                     <textarea
@@ -276,7 +282,6 @@ export default function Profile() {
 
           {/* Quick Stats Sidebar */}
           <div className="space-y-6">
-            {/* Account Stats */}
             <div className="bg-gray-800/80 backdrop-blur-sm border border-gray-700 rounded-2xl p-6 shadow-2xl">
               <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
                 <Trophy className="w-5 h-5 text-yellow-400" />
@@ -286,9 +291,7 @@ export default function Profile() {
                 <div className="flex items-center justify-between">
                   <span className="text-gray-400">Account Type</span>
                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    user.role === 'faculty' 
-                      ? 'bg-purple-500/20 text-purple-300' 
-                      : 'bg-blue-500/20 text-blue-300'
+                    user.role === 'faculty' ? 'bg-purple-500/20 text-purple-300' : 'bg-blue-500/20 text-blue-300'
                   }`}>
                     {user.role === 'faculty' ? 'Faculty' : 'Student'}
                   </span>
@@ -307,34 +310,35 @@ export default function Profile() {
                 </div>
               </div>
             </div>
+<div className="bg-gray-800/80 backdrop-blur-sm border border-gray-700 rounded-2xl p-6 shadow-2xl">
+  <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+    <Star className="w-5 h-5 text-blue-400" />
+    Quick Actions
+  </h3>
+  <div className="space-y-3">
+    <a href="/notes" className="w-full block text-left p-3 bg-gray-700/50 hover:bg-gray-700 rounded-lg transition-colors duration-200">
+      <div className="flex items-center gap-3">
+        <BookOpen className="w-4 h-4 text-blue-400" />
+        <span className="text-sm">Browse Notes</span>
+      </div>
+    </a>
 
-            {/* Quick Actions */}
-            <div className="bg-gray-800/80 backdrop-blur-sm border border-gray-700 rounded-2xl p-6 shadow-2xl">
-              <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                <Star className="w-5 h-5 text-blue-400" />
-                Quick Actions
-              </h3>
-              <div className="space-y-3">
-                <button className="w-full text-left p-3 bg-gray-700/50 hover:bg-gray-700 rounded-lg transition-colors duration-200">
-                  <div className="flex items-center gap-3">
-                    <BookOpen className="w-4 h-4 text-blue-400" />
-                    <span className="text-sm">Browse Notes</span>
-                  </div>
-                </button>
-                <button className="w-full text-left p-3 bg-gray-700/50 hover:bg-gray-700 rounded-lg transition-colors duration-200">
-                  <div className="flex items-center gap-3">
-                    <FileText className="w-4 h-4 text-green-400" />
-                    <span className="text-sm">View Papers</span>
-                  </div>
-                </button>
-                <button className="w-full text-left p-3 bg-gray-700/50 hover:bg-gray-700 rounded-lg transition-colors duration-200">
-                  <div className="flex items-center gap-3">
-                    <Clock className="w-4 h-4 text-purple-400" />
-                    <span className="text-sm">Study Hub</span>
-                  </div>
-                </button>
-              </div>
-            </div>
+    <a href="/papers" className="w-full block text-left p-3 bg-gray-700/50 hover:bg-gray-700 rounded-lg transition-colors duration-200">
+      <div className="flex items-center gap-3">
+        <FileText className="w-4 h-4 text-green-400" />
+        <span className="text-sm">View Papers</span>
+      </div>
+    </a>
+
+    <a href="/home" className="w-full block text-left p-3 bg-gray-700/50 hover:bg-gray-700 rounded-lg transition-colors duration-200">
+      <div className="flex items-center gap-3">
+        <Clock className="w-4 h-4 text-purple-400" />
+        <span className="text-sm">Study Hub</span>
+      </div>
+    </a>
+  </div>
+</div>
+
           </div>
         </div>
       </div>
