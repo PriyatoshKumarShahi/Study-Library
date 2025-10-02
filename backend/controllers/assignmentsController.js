@@ -27,6 +27,7 @@ exports.uploadAssignment = async (req, res) => {
       year,
       branch,
       description,
+      facultyName: req.body.facultyName,
       fileUrl: result.secure_url,
       cloudinaryId: result.public_id,
       uploadedBy: req.user.id,
@@ -48,8 +49,7 @@ exports.getAssignments = async (req, res) => {
     let query = {};
     if (assignmentNo) query.assignmentNo = assignmentNo;
     if (subject) query.subject = new RegExp(subject, 'i');
-    if (facultyName) query.facultyName = new RegExp(facultyName, 'i');
-
+if (facultyName) query.facultyName = { $regex: facultyName, $options: "i" };
     const assignments = await Assignment.find(query)
       .sort({ createdAt: -1 });
     res.json(assignments);
