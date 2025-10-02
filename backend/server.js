@@ -8,6 +8,7 @@ const profileRoutes = require('./routes/profile');
 const notesRoutes = require('./routes/notes');
 const papersRoutes = require('./routes/papers');
 const usersRoutes = require('./routes/users');
+const assignmentsRoutes = require('./routes/assignments'); // ✅ add this
 
 const errorHandler = require('./middleware/errorHandler');
 const createDefaultAdmin = require('./utils/initAdmin');
@@ -30,7 +31,7 @@ app.use('/api/profile', profileRoutes);
 app.use('/api/notes', notesRoutes);
 app.use('/api/papers', papersRoutes);
 app.use('/api/users', usersRoutes);
-
+app.use('/api/assignments', assignmentsRoutes); // ✅ add this
 
 // Error handler
 app.use(errorHandler);

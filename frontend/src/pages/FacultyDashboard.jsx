@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
-import axios from "axios";
+import API from "../api";
 
 export default function FacultyDashboard() {
   const { user } = useAuth();
@@ -20,13 +20,14 @@ export default function FacultyDashboard() {
     else setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (e) => {
+ const handleSubmit = async (e) => {
     e.preventDefault();
     const data = new FormData();
     for (let key in form) data.append(key, form[key]);
+    data.append("facultyName", user.name); // ✅ auto-attach faculty name
 
     try {
-      const res = await axios.post("/api/assignments/upload", data, {
+      const res = await API.post("/assignments/upload", data, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       setMsg("Assignment uploaded successfully!");
