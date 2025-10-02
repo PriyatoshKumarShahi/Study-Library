@@ -11,7 +11,8 @@ import {
   User, 
   GraduationCap, 
   Calendar, 
-  Trash2
+  Trash2,
+  Search
 } from "lucide-react";
 
 
@@ -173,7 +174,7 @@ return (
             onClick={handleSearch}
             className="bg-blue-600 hover:bg-blue-700 p-3 rounded-lg font-medium transition-all duration-200 flex items-center gap-2"
           >
-            <BookOpen className="w-5 h-5" />
+           <Search className="w-4 h-4 text-white" />
             {loadingSearch ? "Searching..." : "Search"}
           </button>
           <button
