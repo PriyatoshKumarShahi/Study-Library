@@ -10,57 +10,67 @@ export function AuthProvider({ children }) {
   const [token, setToken] = useState(localStorage.getItem('token') || null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    async function fetchMe() {
-      if (!token) {
-        setLoading(false);
-        return;
-      }
-      try {
-        setAuthToken(token);
-        const res = await API.get('/auth/me');
-        setUser(res.data);
-      } catch (err) {
-        console.error('fetchMe error', err.response?.data || err.message);
-        localStorage.removeItem('token');
-        setToken(null);
-        setUser(null);
-        setAuthToken(null);
-      } finally {
-        setLoading(false);
-      }
+useEffect(() => {
+  async function fetchMe() {
+    if (!token) {
+      setLoading(false);
+      return;
     }
-    fetchMe();
-  }, [token]);
-
-  const login = async (email, password) => {
     try {
-      const res = await API.post('/auth/login', { email, password });
-      const { token: t, user: u } = res.data;
-      localStorage.setItem('token', t);
-      setToken(t);
-      setAuthToken(t);
-      setUser(u);
-      return { user: u };
-    } catch (err) {
-      // rethrow so pages can show messages
-      throw err;
-    }
-  };
+      setAuthToken(token);
+      const res = await API.get('/auth/me');
 
-  const register = async (payload) => {
-    try {
-      const res = await API.post('/auth/register', payload);
-      const { token: t, user: u } = res.data;
-      localStorage.setItem('token', t);
-      setToken(t);
-      setAuthToken(t);
-      setUser(u);
-      return { user: u };
+      // ✅ map _id → id
+      setUser({ ...res.data, id: res.data._id });
     } catch (err) {
-      throw err;
+      console.error('fetchMe error', err.response?.data || err.message);
+      localStorage.removeItem('token');
+      setToken(null);
+      setUser(null);
+      setAuthToken(null);
+    } finally {
+      setLoading(false);
     }
-  };
+  }
+  fetchMe();
+}, [token]);
+
+
+ const login = async (email, password) => {
+  try {
+    const res = await API.post('/auth/login', { email, password });
+    const { token: t, user: u } = res.data;
+    localStorage.setItem('token', t);
+    setToken(t);
+    setAuthToken(t);
+
+    // Map backend _id → id
+    const authUser = { ...u, id: u._id };
+    setUser(authUser);
+
+    return { user: authUser };
+  } catch (err) {
+    throw err;
+  }
+};
+
+const register = async (payload) => {
+  try {
+    const res = await API.post('/auth/register', payload);
+    const { token: t, user: u } = res.data;
+    localStorage.setItem('token', t);
+    setToken(t);
+    setAuthToken(t);
+
+    const authUser = { ...u, id: u._id };
+    setUser(authUser);
+
+    return { user: authUser };
+  } catch (err) {
+    throw err;
+  }
+};
+
 
   const logout = () => {
     localStorage.removeItem('token');

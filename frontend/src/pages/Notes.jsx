@@ -346,7 +346,7 @@ const handleDownload = async (noteId, fileUrl, filename) => {
   <Download className="w-4 h-4 group-hover:translate-y-1 transition-transform" />
   <span className="text-sm font-medium">Download</span>
 </button>
-
+{/* I want you to change the ui of FaculityDashboard page and assignment page to the other ages like notes , previous year papers , login/register like forms..2 col in one row structure..Also I want you to create an anoher  starfield component and use it on faculitydashboard page and student assignment page..this new star field will be little bit different from the preious one.use new idea , if something differnet from stars then it will be good..but it should be in dark theme..also use loaders while uploading file or change the text to upllading with a loader..same with deleting assignnments..Also in assignmet page , n year field ,  when i am entering 1 then it is not accepting..it is only accepting on 1st..fix it as well..I want that whether it is 1 ot 1st it should work fine */}
 
   
   {/* Delete button (only for admin) */}
