@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { UserPlus, Mail, Lock, User, GraduationCap, BookOpen, Sparkles } from 'lucide-react';
 import StarField from '../components/StarField';
+import { toast } from 'react-toastify';
 
 export default function Register() {
   const { register } = useAuth();
@@ -35,9 +36,10 @@ export default function Register() {
       }
       await register(payload); // Call backend
       nav('/');
+      toast.success("Successfully Registered!!")
     } catch (err) {
-      console.error(err);
-      setError(err.response?.data?.message || 'Registration failed');
+      // setError(err.response?.data?.message || 'Registration failed');
+      toast.error(err.response?.data?.message|| "Registration Failed!!")
     } finally {
       setLoading(false);
     }

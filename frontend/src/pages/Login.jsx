@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { LogIn, Mail, Lock, GraduationCap, Sparkles } from 'lucide-react';
 import StarField from '../components/StarField';
+import { toast } from 'react-toastify';
 
 export default function Login() {
   const { login } = useAuth();
@@ -20,9 +21,11 @@ export default function Login() {
     try {
       await login(form.email, form.password);
       nav('/');
+      toast.success("Successfully Logged in!!")
+
     } catch (err) {
-      console.error('Login error:', err.response?.data || err.message);
-      setError(err.response?.data?.message || 'Login failed');
+      toast.error(err.response?.data?.message|| "Login Failed!!")
+      // setError(err.response?.data?.message || 'Login failed');
     } finally {
       setLoading(false);
     }
