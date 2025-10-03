@@ -9,6 +9,10 @@ import {
   GraduationCap,
   FileText,
   Trash2,
+  // Star,
+  // StarOff,
+  Bookmark ,
+
 } from "lucide-react";
 import StarField from "../components/StarField";
 import API from "../api";
@@ -22,6 +26,7 @@ export default function Notes() {
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
+  const [activeTab, setActiveTab] = useState("all"); // "all" or "bookmarks"
 
   const [filters, setFilters] = useState({
     year: "",
@@ -46,14 +51,30 @@ export default function Notes() {
 
   useEffect(() => {
     applyFilters();
-  }, [filters, notes]);
+  }, [filters, notes, activeTab]);
 
   const fetchNotes = async () => {
     try {
       const res = await fetch("/api/notes");
       const data = await res.json();
-      setNotes(data);
-      setFilteredNotes(data);
+
+      // Fetch user bookmarks
+      let userBookmarks = [];
+      if (user) {
+        const bookmarkRes = await API.get("/bookmarks", {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        });
+        userBookmarks = bookmarkRes.data.map((note) => note._id);
+      }
+
+      // Mark notes as bookmarked
+      const notesWithBookmark = data.map((note) => ({
+        ...note,
+        isBookmarked: userBookmarks.includes(note._id),
+      }));
+
+      setNotes(notesWithBookmark);
+      setFilteredNotes(notesWithBookmark);
     } catch (error) {
       console.error("Error fetching notes:", error);
     } finally {
@@ -95,8 +116,39 @@ export default function Notes() {
       });
     }
 
+    if (activeTab === "bookmarks") {
+      filtered = filtered.filter((note) => note.isBookmarked);
+    }
+
     setFilteredNotes(filtered);
   };
+
+  const handleBookmarkToggle = async (note) => {
+  if (!user) return toast.error("You must be logged in to bookmark");
+
+  try {
+    if (note.isBookmarked) {
+      await API.delete(`/bookmarks/${note._id}`);
+    } else {
+      await API.post(`/bookmarks/${note._id}`);
+    }
+
+    // Update local state
+    setNotes((prevNotes) =>
+      prevNotes.map((n) =>
+        n._id === note._id ? { ...n, isBookmarked: !n.isBookmarked } : n
+      )
+    );
+
+    toast.success(
+      note.isBookmarked ? "Removed from bookmarks" : "Added to bookmarks"
+    );
+  } catch (err) {
+    console.error("Bookmark toggle failed:", err);
+    toast.error(err.response?.data?.message || "Failed to update bookmark");
+  }
+};
+
 
   const handleDelete = async (id, cloudinaryId) => {
     if (!window.confirm("Are you sure you want to delete this note?")) return;
@@ -174,12 +226,9 @@ export default function Notes() {
     }
   };
 
-  // ✅ Helper function to check if user can delete
   const canDelete = (note) => {
     if (!user) return false;
-    // Admin can delete any note
     if (user.email === "priytoshshahi90@gmail.com") return true;
-    // Creator can delete their own note
     if (note.uploadedBy?._id === user.id) return true;
     return false;
   };
@@ -206,19 +255,36 @@ export default function Notes() {
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 py-12">
         {/* Header */}
-        <div className="text-center mb-12">
-          <div className="flex justify-center mb-6">
-            <div className="relative">
-              <BookOpen className="w-16 h-16 text-blue-400 animate-bounce" />
-              <div className="absolute -top-2 -right-2 w-4 h-4 bg-yellow-400 rounded-full animate-pulse"></div>
-            </div>
-          </div>
-          <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent mb-4 animate-glow">
+        <div className="text-center mb-6">
+          <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent mb-2 animate-glow">
             Study Notes
           </h1>
-          <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-            Access comprehensive study notes shared by faculty and top students
-          </p>
+          <div className="flex justify-center gap-6 mt-4">
+           <button
+  onClick={() => setActiveTab("all")}
+  className={`px-4 py-2 rounded-lg font-semibold transition-all duration-200 cursor-pointer ${
+    activeTab === "all"
+      ? "bg-gradient-to-r from-purple-500 to-blue-500 text-white"
+      : "bg-gray-700/50 text-gray-300"
+  }`}
+>
+  All Notes
+</button>
+
+<button
+  onClick={() => setActiveTab("bookmarks")}
+  className={`px-4 py-2 rounded-lg font-semibold transition-all duration-200 cursor-pointer ${
+    activeTab === "bookmarks"
+      ? "bg-gradient-to-r from-purple-500 to-blue-500 text-white"
+      : "bg-gray-700/50 text-gray-300"
+  }`}
+>
+  Bookmarked
+</button>
+
+
+
+          </div>
         </div>
 
         {/* Filters */}
@@ -298,8 +364,17 @@ export default function Notes() {
             return (
               <div
                 key={note._id}
-                className="group bg-gray-800/80 backdrop-blur-sm border border-gray-700 rounded-2xl p-6 hover:border-blue-500/50 transition-all duration-300 transform hover:-translate-y-2 shadow-2xl hover:shadow-blue-500/10"
+                className="group bg-gray-800/80 backdrop-blur-sm border border-gray-700 rounded-2xl p-6 hover:border-blue-500/50 transition-all duration-300 transform hover:-translate-y-2 shadow-2xl hover:shadow-blue-500/10 relative"
               >
+                <div className="absolute top-4 right-4 cursor-pointer z-20">
+  <Bookmark
+    className={`w-6 h-6 transition-colors duration-200 ${
+      note.isBookmarked ? "text-yellow-400 fill-yellow-400 scale-110" : "text-gray-400"
+    }`}
+    onClick={() => handleBookmarkToggle(note)}
+  />
+</div>
+
                 <div className="flex items-start justify-between mb-4">
                   <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center group-hover:rotate-6 transition-transform duration-300">
                     <FileText className="w-6 h-6 text-white" />
@@ -344,7 +419,6 @@ export default function Notes() {
                     <span className="text-sm font-medium">Download</span>
                   </button>
 
-                  {/* ✅ Delete button - for admin OR creator */}
                   {canDelete(note) && (
                     <button
                       onClick={() => handleDelete(note._id, note.cloudinaryId)}

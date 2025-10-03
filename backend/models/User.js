@@ -19,6 +19,9 @@ const UserSchema = new mongoose.Schema(
       enum: ["student", "faculty", "admin"],
       default: "student",
     },
+    // Separate bookmarks for notes and papers
+    bookmarks: [{ type: mongoose.Schema.Types.ObjectId, ref: "Notes"}],
+    paperBookmarks: [{ type: mongoose.Schema.Types.ObjectId, ref: "Papers"}], // Add this new field
     profile: { type: ProfileSchema, default: () => ({}) },
   },
   { timestamps: true }
