@@ -1,14 +1,14 @@
-// routes/assignments.js
 const express = require('express');
 const router = express.Router();
 const {
   uploadAssignment,
   getAssignments,
   deleteAssignment,
-  incrementDownload
+  incrementDownload,
+  getMyAssignments  // ✅ Add this
 } = require('../controllers/assignmentsController');
 const authenticateToken = require('../middleware/auth');
-const requireFaculty = require('../middleware/faculty'); // ensures req.user.role === 'faculty'
+const requireFaculty = require('../middleware/faculty');
 const upload = require('../config/upload');
 
 // upload - faculty only
@@ -16,6 +16,9 @@ router.post('/upload', authenticateToken, requireFaculty, upload.single('file'),
 
 // search - require auth (students can access)
 router.get('/', authenticateToken, getAssignments);
+
+// ✅ NEW: Get my assignments (faculty only)
+router.get('/my-assignments', authenticateToken, requireFaculty, getMyAssignments);
 
 // delete - only owner or admin
 router.delete('/:id', authenticateToken, deleteAssignment);

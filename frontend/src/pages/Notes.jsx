@@ -8,8 +8,7 @@ import {
   Calendar,
   GraduationCap,
   FileText,
-  Star,
-  Eye,
+  Trash2,
 } from "lucide-react";
 import StarField from "../components/StarField";
 import API from "../api";
@@ -21,7 +20,7 @@ export default function Notes() {
   const [notes, setNotes] = useState([]);
   const [filteredNotes, setFilteredNotes] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [downloading , setDownloading] = useState(false)
+  const [downloading, setDownloading] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
 
   const [filters, setFilters] = useState({
@@ -99,31 +98,31 @@ export default function Notes() {
     setFilteredNotes(filtered);
   };
 
- const handleDelete = async (id, cloudinaryId) => {
-  if (!window.confirm("Are you sure you want to delete this note?")) return;
+  const handleDelete = async (id, cloudinaryId) => {
+    if (!window.confirm("Are you sure you want to delete this note?")) return;
 
-  setDeletingId(id); // show loader for this note
-  toast.info("Deleting file...");
+    setDeletingId(id);
+    toast.info("Deleting file...");
 
-  try {
-    await API.delete(`/notes/${id}`, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-      data: { cloudinaryId },
-    });
+    try {
+      await API.delete(`/notes/${id}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        data: { cloudinaryId },
+      });
 
-    setNotes((prev) => prev.filter((note) => note._id !== id));
-    setFilteredNotes((prev) => prev.filter((note) => note._id !== id));
+      setNotes((prev) => prev.filter((note) => note._id !== id));
+      setFilteredNotes((prev) => prev.filter((note) => note._id !== id));
 
-    toast.success("File deleted successfully!!");
-  } catch (err) {
-    console.error("Delete failed:", err);
-    toast.error(err.response?.data?.message || "Failed to delete!!");
-  } finally {
-    setDeletingId(null); 
-  }
-};;
+      toast.success("File deleted successfully!");
+    } catch (err) {
+      console.error("Delete failed:", err);
+      toast.error(err.response?.data?.message || "Failed to delete!");
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const handleFilterChange = (key, value) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
@@ -132,53 +131,58 @@ export default function Notes() {
   const clearFilters = () => {
     setFilters({ year: "", branch: "", subject: "", search: "" });
   };
-const handleDownload = async (noteId, fileUrl, filename) => {
-  if (!fileUrl) return toast.error("File URL missing");
 
-  setDownloading(true); // Show loader
-  toast.info("Downloading started...");
+  const handleDownload = async (noteId, fileUrl, filename) => {
+    if (!fileUrl) return toast.error("File URL missing");
 
-  try {
-    // Fetch the file
-    const response = await fetch(fileUrl);
-    if (!response.ok) throw new Error("File download failed");
+    setDownloading(true);
+    toast.info("Downloading started...");
 
-    const blob = await response.blob();
-    const blobUrl = window.URL.createObjectURL(blob);
+    try {
+      const response = await fetch(fileUrl);
+      if (!response.ok) throw new Error("File download failed");
 
-    // Create temporary link for download
-    const link = document.createElement("a");
-    link.href = blobUrl;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(blobUrl);
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
 
-    // Increment download count in backend
-    await API.post(`/notes/${noteId}/download`);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
 
-    // Update local state
-    setNotes(prevNotes =>
-      prevNotes.map(n =>
-        n._id === noteId ? { ...n, downloads: (n.downloads || 0) + 1 } : n
-      )
-    );
-    setFilteredNotes(prevNotes =>
-      prevNotes.map(n =>
-        n._id === noteId ? { ...n, downloads: (n.downloads || 0) + 1 } : n
-      )
-    );
-     toast.success("Download completed");
+      await API.post(`/notes/${noteId}/download`);
 
-  } catch (error) {
-    console.error("Download failed:", error);
-     toast.error(err.response?.data?.message || "Download failed");
-  } finally {
-    setDownloading(false); // Hide loader
-  }
-};
+      setNotes((prevNotes) =>
+        prevNotes.map((n) =>
+          n._id === noteId ? { ...n, downloads: (n.downloads || 0) + 1 } : n
+        )
+      );
+      setFilteredNotes((prevNotes) =>
+        prevNotes.map((n) =>
+          n._id === noteId ? { ...n, downloads: (n.downloads || 0) + 1 } : n
+        )
+      );
+      toast.success("Download completed");
+    } catch (error) {
+      console.error("Download failed:", error);
+      toast.error("Download failed");
+    } finally {
+      setDownloading(false);
+    }
+  };
 
+  // ✅ Helper function to check if user can delete
+  const canDelete = (note) => {
+    if (!user) return false;
+    // Admin can delete any note
+    if (user.email === "priytoshshahi90@gmail.com") return true;
+    // Creator can delete their own note
+    if (note.uploadedBy?._id === user.id) return true;
+    return false;
+  };
 
   if (loading) {
     return (
@@ -194,7 +198,7 @@ const handleDownload = async (noteId, fileUrl, filename) => {
   return (
     <div className="min-h-screen bg-gray-900 text-white relative overflow-hidden">
       <StarField />
-        {downloading && (
+      {downloading && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
           <Loader message="Downloading your file..." />
         </div>
@@ -225,7 +229,6 @@ const handleDownload = async (noteId, fileUrl, filename) => {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-            {/* Search */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
@@ -237,7 +240,6 @@ const handleDownload = async (noteId, fileUrl, filename) => {
               />
             </div>
 
-            {/* Year Filter */}
             <select
               value={filters.year}
               onChange={(e) => handleFilterChange("year", e.target.value)}
@@ -251,7 +253,6 @@ const handleDownload = async (noteId, fileUrl, filename) => {
               ))}
             </select>
 
-            {/* Branch Filter */}
             <select
               value={filters.branch}
               onChange={(e) => handleFilterChange("branch", e.target.value)}
@@ -265,7 +266,6 @@ const handleDownload = async (noteId, fileUrl, filename) => {
               ))}
             </select>
 
-            {/* Subject Filter */}
             <input
               type="text"
               placeholder="Subject..."
@@ -289,80 +289,77 @@ const handleDownload = async (noteId, fileUrl, filename) => {
         </div>
 
         {/* Notes Grid */}
-     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredNotes.map((note) => { // Opening the map function with block scope {
-             
-            const cleanFilename = note.title
-              ? note.title.replace(/[^a-z0-9]/gi, "_").toLowerCase() + ".pdf"
-              : "downloaded_file.pdf";
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredNotes.map((note) => {
+            const cleanFilename = note.title
+              ? note.title.replace(/[^a-z0-9]/gi, "_").toLowerCase() + ".pdf"
+              : "downloaded_file.pdf";
 
-            return ( // Explicit return for the JSX starts here
-            <div
-              key={note._id}
-              className="group bg-gray-800/80 backdrop-blur-sm border border-gray-700 rounded-2xl p-6 hover:border-blue-500/50 transition-all duration-300 transform hover:-translate-y-2 shadow-2xl hover:shadow-blue-500/10"
-            >
-              <div className="flex items-start justify-between mb-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center group-hover:rotate-6 transition-transform duration-300">
-                  <FileText className="w-6 h-6 text-white" />
-                </div>
-                
-              </div>
+            return (
+              <div
+                key={note._id}
+                className="group bg-gray-800/80 backdrop-blur-sm border border-gray-700 rounded-2xl p-6 hover:border-blue-500/50 transition-all duration-300 transform hover:-translate-y-2 shadow-2xl hover:shadow-blue-500/10"
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center group-hover:rotate-6 transition-transform duration-300">
+                    <FileText className="w-6 h-6 text-white" />
+                  </div>
+                </div>
 
-              <h3 className="text-xl font-bold mb-2 text-white group-hover:text-blue-400 transition-colors duration-300">
-                {note.title}
-              </h3>
+                <h3 className="text-xl font-bold mb-2 text-white group-hover:text-blue-400 transition-colors duration-300">
+                  {note.title}
+                </h3>
 
-              <p className="text-gray-300 text-sm mb-4 leading-relaxed">
-                {note.description}
-              </p>
+                <p className="text-gray-300 text-sm mb-4 leading-relaxed">
+                  {note.description}
+                </p>
 
-              <div className="space-y-2 mb-4">
-                <div className="flex items-center gap-2 text-sm">
-                  <GraduationCap className="w-4 h-4 text-blue-400" />
-                  <span className="text-gray-300">
-                    {note.year} • {note.branch}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Calendar className="w-4 h-4 text-green-400" />
-                  <span className="text-gray-300">
-                    By {note.uploadedBy?.name || "Unknown"}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Download className="w-4 h-4 text-purple-400" />
-                  <span className="text-gray-300">
-                    {note.downloads || 0} downloads
-                  </span>
-                </div>
-              </div> 
-                
-           <div className="flex gap-2">
+                <div className="space-y-2 mb-4">
+                  <div className="flex items-center gap-2 text-sm">
+                    <GraduationCap className="w-4 h-4 text-blue-400" />
+                    <span className="text-gray-300">
+                      {note.year} • {note.branch}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Calendar className="w-4 h-4 text-green-400" />
+                    <span className="text-gray-300">
+                      By {note.uploadedBy?.name || "Unknown"}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Download className="w-4 h-4 text-purple-400" />
+                    <span className="text-gray-300">
+                      {note.downloads || 0} downloads
+                    </span>
+                  </div>
+                </div>
 
-<button
-  onClick={() => handleDownload(note._id, note.fileUrl, cleanFilename)}
-  className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 px-4 py-2 rounded-lg transition-all duration-200 transform hover:scale-105 group"
->
-  <Download className="w-4 h-4 group-hover:translate-y-1 transition-transform" />
-  <span className="text-sm font-medium">Download</span>
-</button>
-{/* I want you to change the ui of FaculityDashboard page and assignment page to the other ages like notes , previous year papers , login/register like forms..2 col in one row structure..Also I want you to create an anoher  starfield component and use it on faculitydashboard page and student assignment page..this new star field will be little bit different from the preious one.use new idea , if something differnet from stars then it will be good..but it should be in dark theme..also use loaders while uploading file or change the text to upllading with a loader..same with deleting assignnments..Also in assignmet page , n year field ,  when i am entering 1 then it is not accepting..it is only accepting on 1st..fix it as well..I want that whether it is 1 ot 1st it should work fine */}
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleDownload(note._id, note.fileUrl, cleanFilename)}
+                    className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 px-4 py-2 rounded-lg transition-all duration-200 transform hover:scale-105"
+                  >
+                    <Download className="w-4 h-4 group-hover:translate-y-1 transition-transform" />
+                    <span className="text-sm font-medium">Download</span>
+                  </button>
 
-  
-  {/* Delete button (only for admin) */}
-  {user?.email === "priytoshshahi90@gmail.com" && (
-    <button
-       onClick={() => handleDelete(note._id, note.cloudinaryId)}
-  disabled={deletingId === note._id}
-      className="flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg transition-colors duration-200"
-    >
-     {deletingId === note._id ? "Deleting..." : "Delete"}
-    </button>
-  )}
-</div>
-            </div>
-          )})} 
-     </div>
+                  {/* ✅ Delete button - for admin OR creator */}
+                  {canDelete(note) && (
+                    <button
+                      onClick={() => handleDelete(note._id, note.cloudinaryId)}
+                      disabled={deletingId === note._id}
+                      className="flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg transition-colors duration-200 disabled:opacity-60"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      {deletingId === note._id ? "..." : "Delete"}
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
 
         {filteredNotes.length === 0 && (
           <div className="text-center py-12">

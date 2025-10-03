@@ -1,7 +1,7 @@
 const Notes = require("../models/Notes");
 const cloudinary = require("../config/cloudinary");
 
-// Upload Notes
+// Upload Notes (Admin OR Faculty can upload)
 exports.uploadNotes = async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ message: "No file uploaded" });
@@ -49,7 +49,7 @@ exports.uploadNotes = async (req, res) => {
   }
 };
 
-// Get Notes
+// Get Notes (no change needed - already works)
 exports.getNotes = async (req, res) => {
   try {
     const { year, branch, subject, search } = req.query;
@@ -80,21 +80,35 @@ exports.deleteNote = async (req, res) => {
     const { id } = req.params;
     const { cloudinaryId } = req.body;
     const note = await Notes.findById(id);
+    
     if (!note) return res.status(404).json({ message: "Note not found" });
 
+    // ✅ Check if user is the owner or admin
+    const isOwner = note.uploadedBy.toString() === req.user.id;
+    const isAdmin = req.user.role === 'admin';
+
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ message: "Not authorized to delete this note" });
+    }
+
+    // Delete from cloudinary
     if (cloudinaryId) {
-      await cloudinary.uploader.destroy(cloudinaryId, { resource_type: "raw" });
+      try {
+        await cloudinary.uploader.destroy(cloudinaryId, { resource_type: "raw" });
+      } catch (err) {
+        console.warn("Cloudinary deletion failed:", err.message);
+      }
     }
 
     await Notes.findByIdAndDelete(id);
     res.json({ message: "Note deleted successfully" });
   } catch (error) {
+    console.error("Delete note error:", error);
     res.status(500).json({ message: "Delete failed", error: error.message });
   }
 };
 
-// Increment Download & Track User
-// Increment download count for notes
+// Increment Download
 exports.incrementDownload = async (req, res) => {
   try {
     const { id } = req.params;
@@ -103,7 +117,6 @@ exports.incrementDownload = async (req, res) => {
       return res.status(400).json({ message: "Note ID is required" });
     }
 
-    // Only increment downloads
     const note = await Notes.findByIdAndUpdate(
       id,
       { $inc: { downloads: 1 } },
@@ -123,4 +136,3 @@ exports.incrementDownload = async (req, res) => {
     res.status(500).json({ message: "Failed to update download count" });
   }
 };
-

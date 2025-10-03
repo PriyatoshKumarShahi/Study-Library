@@ -132,6 +132,16 @@ exports.incrementDownload = async (req, res) => {
   }
 };
 
+exports.getMyAssignments = async (req, res) => {
+  try {
+    const assignments = await Assignment.find({ uploadedBy: req.user.id })
+      .sort({ createdAt: -1 });
+    res.json(assignments);
+  } catch (error) {
+    console.error("getMyAssignments error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
 // small helper to escape regex
 function escapeRegex(str = "") {
   return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
