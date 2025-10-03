@@ -89,10 +89,10 @@ router.post("/register", async (req, res) => {
       <h2>Welcome to AceStudy, ${name}!</h2>
       <p>We are excited to have you on board. Here are some features you can explore:</p>
       <ul>
-        <li>📚 Access study <b>notes</b> curated by faculty.</li>
-        <li>📝 Download <b>previous year papers</b> to prepare efficiently.</li>
-        <li>📄 Submit and view <b>assignments</b> from your teachers.</li>
-        <li>🎯 Track your learning journey with your profile.</li>
+        <li> Access study <b>notes</b> curated by faculty.</li>
+        <li>Download <b>previous year papers</b> to prepare efficiently.</li>
+        <li>Submit and view <b>assignments</b> from your teachers.</li>
+        <li>Track your learning journey with your profile.</li>
       </ul>
       <p>Start exploring AceStudy today and make the most of it!</p>
       <p>— The AceStudy Team</p>
