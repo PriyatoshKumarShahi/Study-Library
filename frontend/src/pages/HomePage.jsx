@@ -21,7 +21,7 @@ export default function HomePage() {
                 <Sparkles className="w-8 h-8 text-yellow-400 absolute -top-2 -right-2 animate-pulse" />
               </div>
             </div>
-            <h1 className="text-5xl md:text-7xl font-bold bg-gradient-to-r from-blue-400 via-purple-600 to-pink-400 bg-clip-text text-transparent mb-6 animate-glow">
+            <h1 className="text-5xl md:text-7xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent mb-4 animate-glow">
               AceStudy
             </h1>
             <p className="text-xl md:text-2xl text-gray-300 mb-8 leading-relaxed">

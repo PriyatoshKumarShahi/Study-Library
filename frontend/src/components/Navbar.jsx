@@ -148,13 +148,16 @@ export default function Navbar() {
                 <span className="text-blue-400 font-medium">{user.name}</span>
               </div>
 
-              <button
-                onClick={logout}
-                className="flex items-center gap-2 bg-red-600/80 hover:bg-red-700 px-3 py-2 rounded-lg transition-colors duration-200 text-sm group"
-              >
-                <LogOut className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                <span>Logout</span>
-              </button>
+             <button
+  onClick={() => {
+    logout(); 
+    navigate("/login");
+  }}
+  className="flex items-center gap-2 bg-red-600/80 hover:bg-red-700 px-3 py-2 rounded-lg transition-colors duration-200 text-sm group"
+>
+  <LogOut className="w-4 h-4 group-hover:scale-110 transition-transform" />
+  <span>Logout</span>
+</button>
             </div>
           </>
         ) : (
