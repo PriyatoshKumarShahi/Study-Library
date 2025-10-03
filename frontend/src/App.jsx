@@ -4,7 +4,6 @@ import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import Register from './pages/Register';
 import Login from './pages/Login';
 import Profile from './pages/Profile';
-import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
 import Home from './pages/HomePage';
@@ -15,7 +14,8 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import FacultyDashboard from './pages/FacultyDashboard';
 import StudentAssignments from './pages/StudentAssignments';
-
+import Forum from './pages/ForumDashboard';  
+import ChannelPage from './pages/ChannelPage';
 
 function Layout({ children }) {
   const location = useLocation();
@@ -30,23 +30,23 @@ function Layout({ children }) {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Layout>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-            <Route path="/notes" element={<Notes />} />
-            <Route path="/papers" element={<PreviousPapers />} />
-            <Route path="/admin" element={<Admin />} />
-            <Route path="/faculty-dashboard" element={<ProtectedRoute><FacultyDashboard /></ProtectedRoute>} />
-  <Route path="/student-assignments" element={<ProtectedRoute><StudentAssignments /></ProtectedRoute>} />
-          </Routes>
-          <ToastContainer position="top-right" autoClose={3000}  />
-        </Layout>
-      </BrowserRouter>
-    </AuthProvider>
+    <BrowserRouter>
+      <Layout>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+          <Route path="/notes" element={<Notes />} />
+          <Route path="/papers" element={<PreviousPapers />} />
+          <Route path="/admin" element={<Admin />} />
+          <Route path="/faculty-dashboard" element={<ProtectedRoute><FacultyDashboard /></ProtectedRoute>} />
+          <Route path="/student-assignments" element={<ProtectedRoute><StudentAssignments /></ProtectedRoute>} />
+          <Route path="/forum" element={<ProtectedRoute><Forum /></ProtectedRoute>} />  
+          <Route path="/forum/channel/:id" element={<ProtectedRoute><ChannelPage /></ProtectedRoute>} />
+        </Routes>
+        <ToastContainer position="top-right" autoClose={3000} />
+      </Layout>
+    </BrowserRouter>
   );
 }
