@@ -118,7 +118,9 @@ router.post("/register", async (req, res) => {
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-    if (!email || !password) return res.status(400).json({ message: 'Missing fields' });
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Missing fields' });
+    }
 
     const user = await User.findOne({ email });
     if (!user) return res.status(400).json({ message: 'Invalid credentials' });
@@ -126,17 +128,20 @@ router.post('/login', async (req, res) => {
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) return res.status(400).json({ message: 'Invalid credentials' });
 
-    const payload = { id: user._id, role: user.role };
+    // ✅ Add email to JWT payload
+    const payload = { id: user._id, role: user.role, email: user.email };
     const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '7d' });
 
     const u = user.toObject();
     delete u.password;
+
     res.json({ token, user: u });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error' });
   }
 });
+
 
 // Get current user
 router.get('/me', auth, async (req, res) => {
