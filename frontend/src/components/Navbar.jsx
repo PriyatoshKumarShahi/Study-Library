@@ -13,7 +13,7 @@ export default function Navbar() {
 
   useEffect(() => {
     const handleScroll = () => {
-      const sections = ["hero", "about"];
+      const sections = ["hero", "about", "features", "resources"];
       let current = "";
       for (let sec of sections) {
         const el = document.getElementById(sec);
@@ -90,7 +90,7 @@ export default function Navbar() {
 
           {/* Navigation Links */}
           <div className="flex items-center gap-6">
-            {/* Section navigation (Home, About) */}
+            {/* Section navigation */}
             <div className="hidden md:flex items-center gap-6">
               <span onClick={() => scrollToSection("hero")} className={sectionClasses("hero")}>
                 Home
@@ -98,8 +98,21 @@ export default function Navbar() {
               <span onClick={() => scrollToSection("about")} className={sectionClasses("about")}>
                 About
               </span>
+
+              {/* Show Features + Resources ONLY when user is NOT logged in */}
+              {!user && (
+                <>
+                  <span onClick={() => scrollToSection("features")} className={sectionClasses("features")}>
+                    Features
+                  </span>
+                  <span onClick={() => scrollToSection("resources")} className={sectionClasses("resources")}>
+                    Resources
+                  </span>
+                </>
+              )}
             </div>
 
+            {/* Logged in user links */}
             {user && (
               <>
                 <Link to="/notes" className={linkClasses("/notes")}>
@@ -113,7 +126,7 @@ export default function Navbar() {
                 </Link>
 
                 {/* Faculty Dashboard link only for faculty */}
-                {user.role === 'faculty' && (
+                {user.role === "faculty" && (
                   <Link to="/faculty-dashboard" className={linkClasses("/faculty-dashboard")}>
                     Faculty Dashboard
                   </Link>
@@ -133,6 +146,7 @@ export default function Navbar() {
               </>
             )}
 
+            {/* Auth buttons */}
             {user ? (
               <>
                 <Link to="/profile" className={linkClasses("/profile")}>
@@ -146,7 +160,7 @@ export default function Navbar() {
 
                   <button
                     onClick={() => {
-                      logout(); 
+                      logout();
                       navigate("/login");
                     }}
                     className="flex items-center gap-2 bg-red-600/80 hover:bg-red-700 px-3 py-2 rounded-lg transition-colors duration-200 text-sm group"
