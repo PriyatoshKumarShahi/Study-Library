@@ -91,10 +91,10 @@ export default function Forum() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white relative">
-      <div className="max-w-7xl mx-auto px-4 py-12">
+      <div className="max-w-6xl mx-auto px-4 py-12">
         {/* Header Section */}
         <div className="text-center mb-12">
-          <h1 className="text-5xl font-extrabold mb-3 bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent">
+          <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent mb-2">
             Discussion Forum
           </h1>
           <p className="text-gray-400 text-lg">Connect, collaborate, and engage with your community</p>
@@ -105,7 +105,7 @@ export default function Forum() {
           <div className="flex justify-center mb-8">
             <button
               onClick={() => setShowCreate((prev) => !prev)}
-              className="flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-emerald-500/50 transition-all duration-300 cursor-pointer transform hover:scale-105"
+              className="flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 px-6 py-3 rounded-xl font-semibold transition-all duration-300 cursor-pointer"
             >
               <PlusCircle size={20} /> Create Channel
             </button>
@@ -116,7 +116,7 @@ export default function Forum() {
         {showCreate && (
           <form
             onSubmit={handleCreate}
-            className="bg-gradient-to-br from-gray-800 to-gray-900 p-8 rounded-2xl mb-10 space-y-6 border border-gray-700 shadow-2xl max-w-3xl mx-auto"
+            className="bg-gradient-to-br from-gray-800 to-gray-900 p-8 rounded-2xl mb-10 space-y-6 border border-gray-700 max-w-3xl mx-auto"
           >
             <h2 className="text-2xl font-bold text-center mb-4 bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">
               Create New Channel
@@ -173,7 +173,7 @@ export default function Forum() {
                 </button>
                 <button
                   type="submit"
-                  className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 px-6 py-2.5 rounded-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-lg hover:shadow-emerald-500/50"
+                  className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 px-6 py-2.5 rounded-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                   disabled={creating}
                 >
                   {creating ? "Creating..." : "Create Channel"}
@@ -184,7 +184,7 @@ export default function Forum() {
         )}
 
         {/* Channel List */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-2 gap-6 max-w-6xl mx-auto">
+        <div className="grid md:grid-cols-2 gap-6 max-w-5xl mx-auto">
           {loading ? (
             <div className="col-span-full text-center py-16 text-gray-400">
               <div className="inline-block w-8 h-8 border-4 border-gray-600 border-t-emerald-500 rounded-full animate-spin mb-4"></div>
@@ -206,33 +206,32 @@ export default function Forum() {
               return (
                 <div
                   key={ch._id}
-                  className="bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700 hover:border-emerald-500/50 rounded-2xl p-6 flex flex-col justify-between transition-all duration-300 hover:shadow-xl hover:shadow-emerald-500/10 transform hover:-translate-y-1"
+                  className="bg-gray-800 border border-gray-700 hover:border-emerald-500 rounded-2xl p-5 flex flex-col justify-between transition-all duration-200"
+                  style={{ maxWidth: "480px" }}
                 >
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
-                      <h2 className="text-xl font-bold text-white">{ch.name}</h2>
+                      <h2 className="text-lg font-bold text-white truncate">{ch.name}</h2>
                       {ch.isGeneral && (
-                        <span className="text-xs bg-gradient-to-r from-green-600 to-emerald-600 px-2.5 py-1 rounded-full font-semibold shadow-sm">
+                        <span className="text-xs bg-gradient-to-r from-green-600 to-emerald-600 px-2 py-0.5 rounded-full font-semibold">
                           General
                         </span>
                       )}
                     </div>
-                    <p className="text-gray-400 text-sm mb-4 leading-relaxed">
-                      {ch.description || "No description provided"}
-                    </p>
+                    <p className="text-gray-400 text-sm mb-4 leading-relaxed truncate">{ch.description || "No description provided"}</p>
                     <div className="text-xs text-gray-500 space-y-2">
                       <div className="flex items-center gap-2">
                         <span className="text-gray-400">Created by:</span>
-                        <span className="text-emerald-400 font-medium">{ch.creator?.name || "Unknown"}</span>
+                        <span className="text-emerald-400 font-medium truncate">{ch.creator?.name || "Unknown"}</span>
                       </div>
-                      <div className="flex items-center gap-4">
-                        <span className="flex items-center gap-1.5 bg-gray-700/50 px-3 py-1 rounded-full">
+                      <div className="flex items-center gap-3 mt-1">
+                        <span className="flex items-center gap-1.5 bg-gray-700/50 px-3 py-1 rounded-full text-xs">
                           <Users size={13} />
                           <span className="font-medium">{ch.members?.length || 0}</span>
                           <span className="text-gray-400">members</span>
                         </span>
                         {!ch.isGeneral && (
-                          <span className="flex items-center gap-1.5 bg-gray-700/50 px-3 py-1 rounded-full">
+                          <span className="flex items-center gap-1.5 bg-gray-700/50 px-3 py-1 rounded-full text-xs">
                             <Lock size={13} />
                             <span className="font-medium">{ch.pendingRequests?.length || 0}</span>
                             <span className="text-gray-400">pending</span>
@@ -242,24 +241,24 @@ export default function Forum() {
                     </div>
                   </div>
                   
-                  <div className="flex items-center justify-between gap-3 mt-6 pt-4 border-t border-gray-700/50">
+                  <div className="flex items-center justify-between gap-3 mt-4 pt-3  border-gray-700/50">
                     {isMember ? (
                       <Link 
                         to={`/forum/channel/${ch._id}`} 
-                        className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 px-4 py-2.5 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-lg hover:shadow-blue-500/50 cursor-pointer transform hover:scale-105"
+                        className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 px-3 py-2 rounded-lg text-sm font-medium text-white text-center transition-colors duration-200  border-transparent hover:border-blue-500 cursor-pointer"
                       >
-                        Open Channel <ArrowRight size={16} />
+                        Open Channel <ArrowRight size={14} className="inline-block ml-1" />
                       </Link>
                     ) : hasRequested ? (
-                      <span className="flex-1 bg-gradient-to-r from-yellow-600 to-amber-600 px-4 py-2.5 rounded-lg text-sm text-center font-medium shadow-lg">
+                      <span className="flex-1 bg-gradient-to-r from-yellow-500 to-amber-500 px-3 py-2 rounded-lg text-sm font-medium text-white text-center cursor-not-allowed border border-transparent hover:border-yellow-400">
                         Request Pending
                       </span>
                     ) : (
                       <button 
                         onClick={() => handleJoin(ch)} 
-                        className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 px-4 py-2.5 rounded-lg transition-all duration-200 font-medium shadow-lg hover:shadow-purple-500/50 cursor-pointer transform hover:scale-105"
+                        className="flex-1 bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-600 hover:to-amber-600 px-3 py-2 rounded-lg text-sm font-medium text-white text-center transition-colors duration-200 border border-transparent hover:border-yellow-400 cursor-pointer"
                       >
-                        {ch.isGeneral ? "Join Now" : "Request to Join"}
+                        Request to Join
                       </button>
                     )}
 
@@ -269,7 +268,7 @@ export default function Forum() {
                         className="text-red-400 hover:text-red-300 hover:bg-red-500/10 p-2.5 rounded-lg transition-all duration-200 cursor-pointer"
                         title="Delete Channel"
                       >
-                        <Trash2 size={18} />
+                        <Trash2 size={16} />
                       </button>
                     )}
                   </div>
