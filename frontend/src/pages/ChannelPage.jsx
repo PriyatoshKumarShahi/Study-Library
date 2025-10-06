@@ -2,10 +2,12 @@ import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import API from "../api";
 import { useAuth } from "../contexts/AuthContext";
-import { Send, Check, Crown, LogOut, ArrowLeft, MoreVertical, Flag, Pin, X } from "lucide-react";
+import { Send, Check, Crown, LogOut, ArrowLeft, MoreVertical, Flag, Pin, X, Trash2 } from "lucide-react";
 import Loader from "../components/Loader";
 import { toast } from "react-toastify";
 import { io } from "socket.io-client";
+import StarField from "../components/StarField";
+
 
 const SOCKET_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || "http://localhost:5000";
 const socket = io(SOCKET_URL, { withCredentials: true });
@@ -35,6 +37,10 @@ export default function ChannelPage() {
       setMessages((prev) => prev.map(m => m._id === msg._id ? msg : m));
     });
 
+    socket.on("messageDeleted", (data) => {
+      setMessages((prev) => prev.filter(m => m._id !== data.messageId));
+    });
+
     socket.on("memberRemoved", (data) => {
       if (String(data.userId) === String(user?.id)) {
         toast.error("You have been removed from this channel");
@@ -56,6 +62,7 @@ export default function ChannelPage() {
     return () => {
       socket.off("newMessage");
       socket.off("messageUpdated");
+      socket.off("messageDeleted");
       socket.off("memberRemoved");
       socket.off("userBanned");
       socket.emit("leaveChannel", id);
@@ -123,25 +130,23 @@ export default function ChannelPage() {
     }
   };
 
-const handleRemoveMember = async (memberId) => {
-  console.log("Remove member clicked:", memberId); // debug log
-  if (!window.confirm("Are you sure you want to remove this member?")) return;
+  const handleRemoveMember = async (memberId) => {
+    console.log("Remove member clicked:", memberId);
+    if (!window.confirm("Are you sure you want to remove this member?")) return;
 
-  try {
-    console.log("Calling API to remove member...");
-    const res = await API.post(`/forum/channels/${id}/remove-member`, { userId: memberId });
-    console.log("API response:", res.data);
+    try {
+      console.log("Calling API to remove member...");
+      const res = await API.post(`/forum/channels/${id}/remove-member`, { userId: memberId });
+      console.log("API response:", res.data);
 
-    toast.success("Member removed successfully");
-    setOpenMemberMenu(null);
-    fetchChannelAndMessages(); // refresh list after removal
-  } catch (err) {
-    console.error("Error removing member:", err);
-    toast.error(err.response?.data?.message || "Failed to remove member");
-  }
-};
-
-
+      toast.success("Member removed successfully");
+      setOpenMemberMenu(null);
+      fetchChannelAndMessages();
+    } catch (err) {
+      console.error("Error removing member:", err);
+      toast.error(err.response?.data?.message || "Failed to remove member");
+    }
+  };
 
   const handleReportMessage = async (messageId) => {
     if (!window.confirm("Are you sure you want to report this message?")) return;
@@ -168,6 +173,19 @@ const handleRemoveMember = async (memberId) => {
       fetchChannelAndMessages();
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to pin/unpin message");
+    }
+  };
+
+  const handleDeleteMessage = async (messageId) => {
+    if (!window.confirm("Are you sure you want to delete this message?")) return;
+
+    try {
+      await API.delete(`/forum/messages/${messageId}`);
+      toast.success("Message deleted successfully");
+      setOpenMessageMenu(null);
+      setMessages((prev) => prev.filter(m => m._id !== messageId));
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to delete message");
     }
   };
 
@@ -221,6 +239,7 @@ const handleRemoveMember = async (memberId) => {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white flex">
+      <StarField />
       {/* Left Sidebar - Members */}
       <div className="w-64 border-r border-gray-700 bg-gray-850 overflow-y-auto mt-16">
         <div className="p-4">
@@ -232,75 +251,74 @@ const handleRemoveMember = async (memberId) => {
           </h3>
           <div className="space-y-2">
             {channel.members && channel.members.length > 0 ? (
-             channel.members.map((m) => {
-  const isMemberCreator = String(m._id) === String(channel.creator?._id);
-  const isCurrentUser = String(m._id) === String(user?.id);
-  const canRemove = isAdminOrCreator && !isMemberCreator && !isCurrentUser;
+              channel.members.map((m) => {
+                const isMemberCreator = String(m._id) === String(channel.creator?._id);
+                const isCurrentUser = String(m._id) === String(user?.id);
+                const canRemove = isAdminOrCreator && !isMemberCreator && !isCurrentUser;
 
-  return (
-    <div
-      key={m._id}
-      className="flex items-center justify-between p-2 bg-gray-800 rounded hover:bg-gray-750 transition group"
-    >
-      <div className="flex-1 min-w-0 mr-2">
-        <div className="font-medium truncate flex items-center gap-1 text-sm">
-          {m.name || "Unknown"}
-          {isMemberCreator && (
-            <Crown size={12} className="text-yellow-400 flex-shrink-0" />
-          )}
-        </div>
-        <div className="text-xs text-gray-500 truncate">{m.email}</div>
-      </div>
+                return (
+                  <div
+                    key={m._id}
+                    className="flex items-center justify-between p-2 bg-gray-800 rounded hover:bg-gray-750 transition group"
+                  >
+                    <div className="flex-1 min-w-0 mr-2">
+                      <div className="font-medium truncate flex items-center gap-1 text-sm">
+                        {m.name || "Unknown"}
+                        {isMemberCreator && (
+                          <Crown size={12} className="text-yellow-400 flex-shrink-0" />
+                        )}
+                      </div>
+                      <div className="text-xs text-gray-500 truncate">{m.email}</div>
+                    </div>
 
-{canRemove && (
-  <div className="relative">
-    <button
-      onClick={(e) => {
-        e.stopPropagation(); // prevent overlay from closing menu
-        setOpenMemberMenu(openMemberMenu === m._id ? null : m._id);
-      }}
-      className="p-1 hover:bg-gray-600 rounded opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-    >
-      <MoreVertical size={14} />
-    </button>
+                    {canRemove && (
+                      <div className="relative">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setOpenMemberMenu(openMemberMenu === m._id ? null : m._id);
+                          }}
+                          className="p-1 hover:bg-gray-600 rounded opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                        >
+                          <MoreVertical size={14} />
+                        </button>
 
-    {openMemberMenu === m._id && (
-      <div
-        className="absolute right-0 top-8 bg-gray-900 border border-gray-600 rounded shadow-lg z-20 w-32" // higher z-index
-        onClick={(e) => e.stopPropagation()} // prevent overlay from closing
-      >
-        <button
-          onClick={async (e) => {
-            e.stopPropagation(); // extra safety
-            console.log("Remove member clicked:", m._id);
+                        {openMemberMenu === m._id && (
+                          <div
+                            className="absolute right-0 top-8 bg-gray-900 border border-gray-600 rounded shadow-lg z-20 w-32"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <button
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                console.log("Remove member clicked:", m._id);
 
-            if (!window.confirm("Are you sure you want to remove this member?")) return;
+                                if (!window.confirm("Are you sure you want to remove this member?")) return;
 
-            try {
-              console.log("Calling API to remove member...");
-              const res = await API.post(`/forum/channels/${id}/remove-member`, { userId: m._id });
-              console.log("API response:", res.data);
+                                try {
+                                  console.log("Calling API to remove member...");
+                                  const res = await API.post(`/forum/channels/${id}/remove-member`, { userId: m._id });
+                                  console.log("API response:", res.data);
 
-              toast.success("Member removed successfully");
-              setOpenMemberMenu(null); // close menu after removal
-              fetchChannelAndMessages(); // refresh members list
-            } catch (err) {
-              console.error("Error removing member:", err);
-              toast.error(err.response?.data?.message || "Failed to remove member");
-            }
-          }}
-          className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-gray-700 rounded cursor-pointer"
-        >
-          Remove
-        </button>
-      </div>
-    )}
-  </div>
-)}
-
-    </div>
-  );
-})
+                                  toast.success("Member removed successfully");
+                                  setOpenMemberMenu(null);
+                                  fetchChannelAndMessages();
+                                } catch (err) {
+                                  console.error("Error removing member:", err);
+                                  toast.error(err.response?.data?.message || "Failed to remove member");
+                                }
+                              }}
+                              className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-gray-700 rounded cursor-pointer"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })
             ) : (
               <div className="text-center text-gray-500 text-sm py-4">No members yet</div>
             )}
@@ -419,6 +437,7 @@ const handleRemoveMember = async (memberId) => {
               const isChannelCreator = String(m.author?._id) === String(channel.creator?._id);
               const hasReported = m.reports?.some((r) => String(r._id) === String(user?.id));
               const reportCount = m.reports?.length || 0;
+              const canDeleteMessage = isMine || user?.role === "faculty";
 
               return (
                 <div
@@ -486,6 +505,15 @@ const handleRemoveMember = async (memberId) => {
                               {m.pinned ? "Unpin" : "Pin"}
                             </button>
                           )}
+                          {canDeleteMessage && (
+                            <button
+                              onClick={() => handleDeleteMessage(m._id)}
+                              className="w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-gray-800 flex items-center gap-2 cursor-pointer border-t border-gray-700"
+                            >
+                              <Trash2 size={12} />
+                              Delete
+                            </button>
+                          )}
                         </div>
                       )}
                     </div>
@@ -520,14 +548,14 @@ const handleRemoveMember = async (memberId) => {
 
       {/* Click outside to close menus */}
       {(openMemberMenu || openMessageMenu) && (
-  <div
-    className="fixed inset-0 z-0" // lower z-index
-    onClick={() => {
-      setOpenMemberMenu(null);
-      setOpenMessageMenu(null);
-    }}
-  />
-)}
+        <div
+          className="fixed inset-0 z-0"
+          onClick={() => {
+            setOpenMemberMenu(null);
+            setOpenMessageMenu(null);
+          }}
+        />
+      )}
     </div>
   );
 }

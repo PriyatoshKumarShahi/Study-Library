@@ -5,6 +5,8 @@ import { useAuth } from "../contexts/AuthContext";
 import { Users, Lock, PlusCircle, ArrowRight, Trash2 } from "lucide-react";
 import API from "../api";
 import { toast } from "react-toastify";
+import StarField from "../components/StarField";
+
 
 export default function Forum() {
   const { user } = useAuth();
@@ -90,7 +92,10 @@ export default function Forum() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white relative">
+    <div className="relative min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white ">
+        <StarField />
+      
+      
       <div className="max-w-6xl mx-auto px-4 py-12">
         {/* Header Section */}
         <div className="text-center mb-12">

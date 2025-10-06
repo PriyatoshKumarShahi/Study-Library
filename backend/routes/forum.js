@@ -235,6 +235,45 @@ router.post("/messages/:messageId/report", authenticateToken, async (req, res) =
   }
 });
 
+// Add this route to your forumRoutes.js file
+
+router.delete("/messages/:messageId", authenticateToken, async (req, res) => {
+  try {
+    const message = await Message.findById(req.params.messageId)
+      .populate("author", "name email")
+      .populate("channel");
+
+    if (!message) {
+      return res.status(404).json({ message: "Message not found" });
+    }
+
+    const channel = await Channel.findById(message.channel);
+
+    const isAuthor = String(message.author._id) === String(req.user.id);
+    const isFaculty = req.user.role === "faculty";
+
+    if (!isAuthor && !isFaculty) {
+      return res.status(403).json({ message: "Not authorized to delete this message" });
+    }
+
+    await message.deleteOne();
+
+    if (req.io) {
+      req.io.to(channel._id.toString()).emit("messageDeleted", {
+        messageId: String(message._id),
+        channelId: String(channel._id)
+      });
+    }
+
+    res.json({ message: "Message deleted successfully" });
+  } catch (err) {
+    console.error("Delete message error:", err);
+    res.status(500).json({ message: "Error deleting message" });
+  }
+});
+
+module.exports = router;
+
 router.post("/messages/:messageId/pin", authenticateToken, async (req, res) => {
   try {
     const { pinned } = req.body;

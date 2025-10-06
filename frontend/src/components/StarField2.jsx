@@ -118,7 +118,7 @@ const ShootingStars = () => {
     <canvas
       ref={canvasRef}
       className="fixed inset-0 z-0 pointer-events-none"
-      style={{ background: "black" }}
+      style={{ background: "transparent" }}
     />
   );
 };
