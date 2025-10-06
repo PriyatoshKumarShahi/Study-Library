@@ -413,7 +413,7 @@ export default function Notes() {
                 <div className="flex gap-2">
                   <button
                     onClick={() => handleDownload(note._id, note.fileUrl, cleanFilename)}
-                    className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 px-4 py-2 rounded-lg transition-all duration-200 transform hover:scale-105"
+                    className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 px-4 py-2 rounded-lg transition-all duration-200 transform hover:scale-105 cursor-pointer"
                   >
                     <Download className="w-4 h-4 group-hover:translate-y-1 transition-transform" />
                     <span className="text-sm font-medium">Download</span>
@@ -423,7 +423,7 @@ export default function Notes() {
                     <button
                       onClick={() => handleDelete(note._id, note.cloudinaryId)}
                       disabled={deletingId === note._id}
-                      className="flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg transition-colors duration-200 disabled:opacity-60"
+                      className="flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg transition-colors duration-200 disabled:opacity-60 cursor-pointer"
                     >
                       <Trash2 className="w-4 h-4" />
                       {deletingId === note._id ? "..." : "Delete"}

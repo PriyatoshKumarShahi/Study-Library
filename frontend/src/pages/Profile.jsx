@@ -113,7 +113,7 @@ export default function Profile() {
             {!editing && (
               <button
                 onClick={() => setEditing(true)}
-                className="group flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 px-6 py-3 rounded-lg transition-all duration-200 transform hover:scale-105"
+                className="group flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 px-6 py-3 rounded-lg transition-all duration-200 transform hover:scale-105 cursor-pointer"
               >
                 <Edit3 className="w-4 h-4 group-hover:rotate-12 transition-transform" />
                 Edit Profile

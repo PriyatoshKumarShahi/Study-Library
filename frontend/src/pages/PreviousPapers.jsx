@@ -411,7 +411,7 @@ export default function PreviousPapers() {
                       onClick={() =>
                         handleDownload(paper._id, paper.fileUrl, filename)
                       }
-                      className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 px-4 py-2 rounded-lg transition-all duration-200 transform hover:scale-105 group"
+                      className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 px-4 py-2 rounded-lg transition-all duration-200 transform hover:scale-105 group cursor-pointer"
                     >
                       <Download className="w-4 h-4 group-hover:translate-y-1 transition-transform" />
                       <span className="text-sm font-medium">Download</span>
@@ -421,7 +421,7 @@ export default function PreviousPapers() {
                       <button
                         onClick={() => handleDelete(paper._id, paper.cloudinaryId)}
                         disabled={deletingId === paper._id}
-                        className="flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 rounded-lg transition-colors duration-200"
+                        className="flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 rounded-lg transition-colors duration-200 cursor-pointer"
                       >
                         {deletingId === paper._id ? "Deleting..." : "Delete"}
                       </button>

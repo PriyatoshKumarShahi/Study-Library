@@ -163,9 +163,9 @@ export default function Navbar() {
                       logout();
                       navigate("/login");
                     }}
-                    className="flex items-center gap-2 bg-red-600/80 hover:bg-red-700 px-3 py-2 rounded-lg transition-colors duration-200 text-sm group"
+                    className="flex items-center gap-2 bg-red-600/80 hover:bg-red-700 px-3 py-2 rounded-lg transition-colors duration-200 text-sm group cursor-pointer"
                   >
-                    <LogOut className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                    <LogOut className="w-4 h-4 group-hover:scale-110 transition-transform " />
                     <span>Logout</span>
                   </button>
                 </div>
