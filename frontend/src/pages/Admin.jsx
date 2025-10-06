@@ -507,7 +507,7 @@ const UploadTab = ({
   <button
     type="submit"
     disabled={uploading}
-    className="w-full bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white py-4 rounded-lg font-medium transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed transform hover:scale-105"
+    className="w-full bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white py-4 rounded-lg font-medium transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed transform hover:scale-102 cursor-pointer"
   >
     {uploading ? (
       <span className="flex items-center justify-center gap-2">
@@ -515,7 +515,7 @@ const UploadTab = ({
         Uploading...
       </span>
     ) : (
-      <span className="flex items-center justify-center gap-2">
+      <span className="flex items-center justify-center gap-2 ">
         <Plus className="w-5 h-5" />
         Upload {uploadType === 'notes' ? 'Notes' : 'Paper'}
       </span>
