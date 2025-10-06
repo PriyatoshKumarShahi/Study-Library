@@ -17,13 +17,14 @@ import {
   TrendingUp,
   Award,
   AlertCircle,
-  Loader,
+  
   ExternalLink,
   Target,
   Zap,
 } from "lucide-react";
 import StarField from "../components/StarField";
 
+import Loader from "../components/Loader"
 // Circular Progress Chart Component
 const CircularProgress = ({ solved, total, easy, medium, hard }) => {
   const circumference = 2 * Math.PI * 70;
