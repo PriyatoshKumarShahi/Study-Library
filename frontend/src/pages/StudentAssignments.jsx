@@ -188,7 +188,7 @@ export default function StudentAssignments() {
           <div className="flex items-center gap-3">
             <button
               onClick={handleSearch}
-              className=" flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-purple-500 hover:from-blue-700 hover:to-purple-600 px-4 py-2 rounded-lg transition-all duration-200 transform hover:scale-105 cursor-pointer"
+              className=" flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-purple-500 hover:from-blue-700 hover:to-purple-600 px-4 py-2 rounded-lg transition-all duration-200 transform hover:scale-105 "
             >
               <Search className="w-4 h-4 text-white" />
               Search
@@ -199,7 +199,7 @@ export default function StudentAssignments() {
                 setAssignments([]);
                 setError("");
               }}
-              className="bg-gray-600 hover:bg-gray-500 px-4 py-2 rounded-lg  transition-all duration-200 cursor-pointer"
+              className="bg-gray-600 hover:bg-gray-500 px-4 py-2 rounded-lg  transition-all duration-200 "
             >
               Clear
             </button>
