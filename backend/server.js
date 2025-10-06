@@ -13,6 +13,7 @@ const usersRoutes = require('./routes/users');
 const assignmentsRoutes = require('./routes/assignments');
 const bookmarkRoutes = require("./routes/bookmarkRoutes");
 const forumRoutes = require("./routes/forum");
+const statsRoutes = require("./routes/codingStats")
 
 const errorHandler = require('./middleware/errorHandler');
 const createDefaultAdmin = require('./utils/initAdmin');
@@ -54,6 +55,7 @@ app.use('/api/users', usersRoutes);
 app.use('/api/assignments', assignmentsRoutes);
 app.use("/api/bookmarks", bookmarkRoutes);
 app.use("/api/forum", forumRoutes);
+app.use("/api/coding-stats", statsRoutes);
 
 app.use(errorHandler);
 

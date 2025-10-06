@@ -344,7 +344,7 @@ const UploadTab = ({
       <div className="flex gap-4 mb-6">
         <button
           onClick={() => setUploadType('notes')}
-          className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
+          className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all duration-200 cursor-pointer ${
             uploadType === 'notes'
               ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white'
               : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
@@ -355,7 +355,7 @@ const UploadTab = ({
         </button>
         <button
           onClick={() => setUploadType('papers')}
-          className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
+          className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all duration-200 cursor-pointer ${
             uploadType === 'papers'
               ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white'
               : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
@@ -507,7 +507,7 @@ const UploadTab = ({
   <button
     type="submit"
     disabled={uploading}
-    className="w-full bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white py-4 rounded-lg font-medium transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed transform hover:scale-105"
+    className="w-full bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white py-4 rounded-lg font-medium transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed transform hover:scale-102 cursor-pointer"
   >
     {uploading ? (
       <span className="flex items-center justify-center gap-2">
@@ -515,7 +515,7 @@ const UploadTab = ({
         Uploading...
       </span>
     ) : (
-      <span className="flex items-center justify-center gap-2">
+      <span className="flex items-center justify-center gap-2 ">
         <Plus className="w-5 h-5" />
         Upload {uploadType === 'notes' ? 'Notes' : 'Paper'}
       </span>
