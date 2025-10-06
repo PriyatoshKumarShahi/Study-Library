@@ -213,34 +213,35 @@ const LeetCodeStats = ({ username }) => {
 
   return (
     <div className="space-y-6">
-      <div className="bg-gradient-to-br from-orange-500/10 to-yellow-500/10 backdrop-blur-sm border border-orange-500/30 rounded-2xl p-6 shadow-2xl hover:border-orange-400/50 transition-all">
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-yellow-500 rounded-xl flex items-center justify-center text-3xl shadow-lg">
-              💻
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold text-white mb-1">LeetCode Statistics</h2>
-              <a
-                href={`https://leetcode.com/${username}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 text-orange-400 hover:text-orange-300 transition-colors group"
-              >
-                <span className="text-lg font-medium">@{username}</span>
-                <ExternalLink className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-              </a>
-            </div>
-          </div>
-          <button
-            onClick={fetchStats}
-            className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 px-5 py-2.5 rounded-lg transition-all transform hover:scale-105 shadow-lg"
-          >
-            <TrendingUp className="w-4 h-4" />
-            Refresh Stats
-          </button>
-        </div>
+    <div className="bg-gradient-to-br from-purple-500/10 to-indigo-500/10 backdrop-blur-sm border border-purple-500/30 rounded-2xl p-6 shadow-2xl hover:border-purple-400/50 transition-all">
+  <div className="flex items-center justify-between flex-wrap gap-4">
+    <div className="flex items-center gap-4">
+      <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-indigo-400 rounded-xl flex items-center justify-center text-3xl shadow-lg">
+        💻
       </div>
+      <div>
+        <h2 className="text-2xl font-bold text-white mb-1">LeetCode Statistics</h2>
+        <a
+          href={`https://leetcode.com/${username}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 text-purple-400 hover:text-purple-300 transition-colors group"
+        >
+          <span className="text-lg font-medium">@{username}</span>
+          <ExternalLink className="w-4 h-4  group-hover:-translate-y-0.25 transition-transform" />
+        </a>
+      </div>
+    </div>
+    <button
+      onClick={fetchStats}
+      className="flex items-center gap-2 bg-purple-500 hover:bg-purple-600 px-5 py-2.5 rounded-lg transition-all transform hover:scale-105 shadow-lg"
+    >
+      <TrendingUp className="w-4 h-4" />
+      Refresh Stats
+    </button>
+  </div>
+</div>
+
 
       <div className="grid lg:grid-cols-2 gap-6">
         <div className="bg-gray-800/80 backdrop-blur-sm border border-gray-700 rounded-2xl p-8 shadow-2xl hover:border-gray-600 transition-all">
