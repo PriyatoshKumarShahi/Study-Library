@@ -360,7 +360,7 @@ const UploadTab = ({
               ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white'
               : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
           }`}
-        >
+      >
           <FileText className="w-5 h-5" />
           Upload Papers
         </button>
