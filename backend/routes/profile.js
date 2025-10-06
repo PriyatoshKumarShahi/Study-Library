@@ -1,11 +1,12 @@
+//routes/profile.js
 const express = require('express');
 const router = express.Router();
-const auth = require('../middleware/auth');
+const authenticateToken = require('../middleware/auth');
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 
-// GET current user's profile (same as /auth/me but kept here for separation)
-router.get('/', auth, async (req, res) => {
+// GET current user's profile
+router.get('/', authenticateToken, async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select('-password');
     if (!user) return res.status(404).json({ message: 'User not found' });
@@ -17,8 +18,7 @@ router.get('/', auth, async (req, res) => {
 });
 
 // Update profile (name, profile fields, optional password)
-// Update profile
-router.put('/', auth, async (req, res) => {
+router.put('/', authenticateToken, async (req, res) => {
   try {
     const { name, password, profile } = req.body;
     const user = await User.findById(req.user.id);
@@ -28,7 +28,6 @@ router.put('/', auth, async (req, res) => {
 
     if (profile && typeof profile === 'object') {
       if (user.role === 'faculty') {
-        // Prevent updating year for faculty
         const { year, ...rest } = profile;
         user.profile = { ...user.profile.toObject(), ...rest };
       } else {
@@ -51,5 +50,29 @@ router.put('/', auth, async (req, res) => {
   }
 });
 
+// Update coding profiles
+router.put('/coding-profiles', authenticateToken, async (req, res) => {
+  try {
+    const { leetcode, codechef, hackerrank } = req.body;
+    const user = await User.findById(req.user.id);
+
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    user.profile = {
+      ...user.profile.toObject(),
+      leetcode: leetcode || user.profile.leetcode,
+      codechef: codechef || user.profile.codechef,
+      hackerrank: hackerrank || user.profile.hackerrank,
+    };
+
+    await user.save();
+    const u = user.toObject();
+    delete u.password;
+    res.json(u);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
 
 module.exports = router;

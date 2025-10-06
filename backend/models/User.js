@@ -2,11 +2,14 @@ const mongoose = require("mongoose");
 
 const ProfileSchema = new mongoose.Schema({
   bio: { type: String, default: "" },
-  avatar: { type: String, default: "" }, 
+  avatar: { type: String, default: "" },
   department: { type: String, default: "" },
   year: { type: String, default: "" },
   courses: [{ type: String }],
   contact: { type: String, default: "" },
+  leetcode: { type: String, default: "" },
+  codechef: { type: String, default: "" },
+  hackerrank: { type: String, default: "" },
 });
 
 const UserSchema = new mongoose.Schema(
@@ -19,9 +22,8 @@ const UserSchema = new mongoose.Schema(
       enum: ["student", "faculty", "admin"],
       default: "student",
     },
-    // Separate bookmarks for notes and papers
     bookmarks: [{ type: mongoose.Schema.Types.ObjectId, ref: "Notes"}],
-    paperBookmarks: [{ type: mongoose.Schema.Types.ObjectId, ref: "Papers"}], // Add this new field
+    paperBookmarks: [{ type: mongoose.Schema.Types.ObjectId, ref: "Papers"}],
     profile: { type: ProfileSchema, default: () => ({}) },
   },
   { timestamps: true }
