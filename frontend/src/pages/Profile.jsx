@@ -17,14 +17,15 @@ import {
   TrendingUp,
   Award,
   AlertCircle,
-  
   ExternalLink,
   Target,
   Zap,
+  Circle,
 } from "lucide-react";
 import StarField from "../components/StarField";
 
-import Loader from "../components/Loader"
+import Loader from "../components/Loader";
+import BubbleChart from "../components/BubbleChart";
 // Circular Progress Chart Component
 const CircularProgress = ({ solved, total, easy, medium, hard }) => {
   const circumference = 2 * Math.PI * 70;
@@ -44,7 +45,14 @@ const CircularProgress = ({ solved, total, easy, medium, hard }) => {
     <div className="relative w-48 h-48 mx-auto">
       <svg className="transform -rotate-90 w-48 h-48">
         {/* Background circle */}
-        <circle cx="96" cy="96" r="70" stroke="#374151" strokeWidth="14" fill="none" />
+        <circle
+          cx="96"
+          cy="96"
+          r="70"
+          stroke="#374151"
+          strokeWidth="14"
+          fill="none"
+        />
 
         {/* Easy (green) */}
         <circle
@@ -100,7 +108,6 @@ const CircularProgress = ({ solved, total, easy, medium, hard }) => {
   );
 };
 
-
 // Difficulty Bar Component
 const DifficultyBar = ({ label, count, color, maxCount }) => {
   const percentage = maxCount > 0 ? (count / maxCount) * 100 : 0;
@@ -113,7 +120,10 @@ const DifficultyBar = ({ label, count, color, maxCount }) => {
       </div>
       <div className="w-full h-3 bg-gray-700 rounded-full overflow-hidden">
         <div
-          className={`h-full ${color.replace("text-", "bg-")} transition-all duration-1000 ease-out rounded-full`}
+          className={`h-full ${color.replace(
+            "text-",
+            "bg-"
+          )} transition-all duration-1000 ease-out rounded-full`}
           style={{ width: `${Math.min(percentage, 100)}%` }}
         />
       </div>
@@ -131,40 +141,86 @@ const LeetCodeStats = ({ username }) => {
 
   useEffect(() => {
     if (username) {
+      console.log("[Frontend] Username detected:", username);
       fetchStats();
     }
   }, [username]);
 
   const fetchStats = async () => {
+    console.log("[Frontend] Starting stats fetch...");
     setLoading(true);
     setError(null);
 
     try {
-      const response = await fetch('/api/coding-stats/fetch-stats', {
-        method: 'POST',
+      const requestBody = {
+        profiles: [{ platform: "leetcode", username }],
+      };
+      console.log("[Frontend] Request body:", requestBody);
+
+      const response = await fetch("/api/coding-stats/fetch-stats", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
-        body: JSON.stringify({ 
-          profiles: [{ platform: 'leetcode', username }] 
-        }),
+        body: JSON.stringify(requestBody),
       });
 
-      if (!response.ok) throw new Error('Failed to fetch stats');
+      console.log("[Frontend] Response status:", response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("[Frontend] Response error:", errorText);
+        throw new Error("Failed to fetch stats");
+      }
 
       const data = await response.json();
-      
-      if (data.results && data.results[0] && !data.results[0].error) {
-        setStats(data.results[0].stats);
+      console.log("[Frontend] Response data:", data);
+
+      if (data.results && data.results[0]) {
+        console.log("[Frontend] First result:", data.results[0]);
+
+        if (data.results[0].error) {
+          console.error(
+            "[Frontend] Result contains error:",
+            data.results[0].error
+          );
+          throw new Error(data.results[0].error);
+        }
+
+        if (data.results[0].stats) {
+          console.log("[Frontend] Stats received:", data.results[0].stats);
+          console.log(
+            "[Frontend] Total Submissions:",
+            data.results[0].stats.totalSubmissions
+          );
+          console.log(
+            "[Frontend] Active Days:",
+            data.results[0].stats.totalActiveDays
+          );
+          console.log(
+            "[Frontend] Max Streak:",
+            data.results[0].stats.maxStreak
+          );
+          console.log(
+            "[Frontend] Current Streak:",
+            data.results[0].stats.currentStreak
+          );
+          setStats(data.results[0].stats);
+        } else {
+          console.error("[Frontend] No stats in result");
+          throw new Error("No stats data received");
+        }
       } else {
-        throw new Error(data.results[0]?.error || 'Failed to fetch stats');
+        console.error("[Frontend] Invalid response structure");
+        throw new Error("Invalid response structure");
       }
     } catch (err) {
-      console.error('Error fetching stats:', err);
+      console.error("[Frontend] Error fetching stats:", err);
       setError(err.message || "Failed to fetch LeetCode statistics");
     } finally {
       setLoading(false);
+      console.log("[Frontend] Stats fetch complete");
     }
   };
 
@@ -174,8 +230,13 @@ const LeetCodeStats = ({ username }) => {
         <div className="w-20 h-20 bg-gradient-to-br from-orange-500/20 to-yellow-500/20 rounded-2xl flex items-center justify-center text-5xl mx-auto mb-4">
           💻
         </div>
-        <h2 className="text-2xl font-bold mb-3 text-white">No LeetCode Profile</h2>
-        <p className="text-gray-400">Add your LeetCode username in the profile section to see your coding stats</p>
+        <h2 className="text-2xl font-bold mb-3 text-white">
+          No LeetCode Profile
+        </h2>
+        <p className="text-gray-400">
+          Add your LeetCode username in the profile section to see your coding
+          stats
+        </p>
       </div>
     );
   }
@@ -185,7 +246,9 @@ const LeetCodeStats = ({ username }) => {
       <div className="bg-gray-800/80 backdrop-blur-sm border border-gray-700 rounded-2xl p-12 shadow-2xl">
         <div className="flex flex-col items-center justify-center gap-4 py-8">
           <Loader className="w-12 h-12 animate-spin text-orange-400" />
-          <span className="text-gray-300 text-lg">Fetching your LeetCode stats...</span>
+          <span className="text-gray-300 text-lg">
+            Fetching your LeetCode stats...
+          </span>
         </div>
       </div>
     );
@@ -208,85 +271,207 @@ const LeetCodeStats = ({ username }) => {
     );
   }
 
-  if (!stats) return null;
+  if (!stats) {
+    console.log("[Frontend] No stats to display");
+    return null;
+  }
 
-  const maxSolved = Math.max(stats.easySolved, stats.mediumSolved, stats.hardSolved);
+  const maxSolved = Math.max(
+    stats.easySolved,
+    stats.mediumSolved,
+    stats.hardSolved
+  );
 
   return (
     <div className="space-y-6">
-    <div className="bg-gradient-to-br from-purple-500/10 to-indigo-500/10 backdrop-blur-sm border border-purple-500/30 rounded-2xl p-6 shadow-2xl hover:border-purple-400/50 transition-all">
-  <div className="flex items-center justify-between flex-wrap gap-4">
-    <div className="flex items-center gap-4">
-      <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-indigo-400 rounded-xl flex items-center justify-center text-3xl shadow-lg">
-        💻
+      <div className="bg-gradient-to-br from-purple-500/10 to-indigo-500/10 backdrop-blur-sm border border-purple-500/30 rounded-2xl p-6 shadow-2xl hover:border-purple-400/50 transition-all">
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-indigo-400 rounded-xl flex items-center justify-center text-3xl shadow-lg">
+              💻
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-white mb-1">
+                LeetCode Statistics
+              </h2>
+              <a
+                href={`https://leetcode.com/${username}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 text-purple-400 hover:text-purple-300 transition-colors group"
+              >
+                <span className="text-lg font-medium">@{username}</span>
+                <ExternalLink className="w-4 h-4  group-hover:-translate-y-0.25 transition-transform" />
+              </a>
+            </div>
+          </div>
+          <button
+            onClick={fetchStats}
+            className="flex items-center gap-2 bg-purple-500 hover:bg-purple-600 px-5 py-2.5 rounded-lg transition-all transform hover:scale-105 shadow-lg"
+          >
+            <TrendingUp className="w-4 h-4" />
+            Refresh Stats
+          </button>
+        </div>
       </div>
-      <div>
-        <h2 className="text-2xl font-bold text-white mb-1">LeetCode Statistics</h2>
-        <a
-          href={`https://leetcode.com/${username}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-2 text-purple-400 hover:text-purple-300 transition-colors group"
-        >
-          <span className="text-lg font-medium">@{username}</span>
-          <ExternalLink className="w-4 h-4  group-hover:-translate-y-0.25 transition-transform" />
-        </a>
-      </div>
-    </div>
-    <button
-      onClick={fetchStats}
-      className="flex items-center gap-2 bg-purple-500 hover:bg-purple-600 px-5 py-2.5 rounded-lg transition-all transform hover:scale-105 shadow-lg"
-    >
-      <TrendingUp className="w-4 h-4" />
-      Refresh Stats
-    </button>
-  </div>
-</div>
 
-
-      <div className="grid lg:grid-cols-2 gap-6">
-        <div className="bg-gray-800/80 backdrop-blur-sm border border-gray-700 rounded-2xl p-8 shadow-2xl hover:border-gray-600 transition-all">
-          <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-            <Target className="w-6 h-6 text-blue-400" />
+      <div className="grid lg:grid-cols-3 md:grid-cols-2 sm:grid-cols-1 gap-6">
+        {/* DSA Problems Solved */}
+        <div className="bg-gray-800/80 backdrop-blur-md border border-gray-700 rounded-2xl p-6 shadow-2xl hover:border-gray-600 transition-all">
+          <h3 className="text-lg font-semibold text-blue-300 mb-4 flex items-center gap-2">
+            <Target className="w-5 h-5 text-blue-400" />
             DSA Problems Solved
           </h3>
-          <div className="flex justify-center mb-6">
+          <div className="flex justify-center mb-4">
             <CircularProgress
-              solved={stats.totalSolved}
+              solved={stats.totalSolved || 0}
               total={3200}
-              easy={stats.easySolved}
-              medium={stats.mediumSolved}
-              hard={stats.hardSolved}
+              easy={stats.easySolved || 0}
+              medium={stats.mediumSolved || 0}
+              hard={stats.hardSolved || 0}
             />
           </div>
           <div className="text-center space-y-2">
-            <p className="text-gray-400 text-sm">{stats.totalSolved} problems solved</p>
-            <div className="flex items-center justify-center gap-6 text-sm">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-green-400 rounded-full"></div>
+            <p className="text-gray-400 text-sm">
+              {stats.totalSolved || 0} problems solved
+            </p>
+            <div className="flex items-center justify-center gap-4 text-xs">
+              <div className="flex items-center gap-1">
+                <div className="w-2.5 h-2.5 bg-green-400 rounded-full"></div>
                 <span className="text-gray-300">Easy</span>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
+              <div className="flex items-center gap-1">
+                <div className="w-2.5 h-2.5 bg-yellow-400 rounded-full"></div>
                 <span className="text-gray-300">Medium</span>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-red-400 rounded-full"></div>
+              <div className="flex items-center gap-1">
+                <div className="w-2.5 h-2.5 bg-red-400 rounded-full"></div>
                 <span className="text-gray-300">Hard</span>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="bg-gray-800/80 backdrop-blur-sm border border-gray-700 rounded-2xl p-8 shadow-2xl hover:border-gray-600 transition-all">
-          <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-            <Zap className="w-6 h-6 text-yellow-400" />
+        {/* Difficulty Breakdown */}
+        <div className="bg-gray-800/80 backdrop-blur-md border border-gray-700 rounded-2xl p-6 shadow-2xl hover:border-gray-600 transition-all">
+          <h3 className="text-lg font-semibold text-yellow-300 mb-4 flex items-center gap-2">
+            <Zap className="w-5 h-5 text-yellow-400" />
             Difficulty Breakdown
           </h3>
-          <div className="space-y-6">
-            <DifficultyBar label="Easy" count={stats.easySolved} color="text-green-400" maxCount={maxSolved} />
-            <DifficultyBar label="Medium" count={stats.mediumSolved} color="text-yellow-400" maxCount={maxSolved} />
-            <DifficultyBar label="Hard" count={stats.hardSolved} color="text-red-400" maxCount={maxSolved} />
+          <div className="space-y-5">
+            <DifficultyBar
+              label="Easy"
+              count={stats.easySolved || 0}
+              color="text-green-400"
+              maxCount={maxSolved}
+            />
+            <DifficultyBar
+              label="Medium"
+              count={stats.mediumSolved || 0}
+              color="text-yellow-400"
+              maxCount={maxSolved}
+            />
+            <DifficultyBar
+              label="Hard"
+              count={stats.hardSolved || 0}
+              color="text-red-400"
+              maxCount={maxSolved}
+            />
+          </div>
+        </div>
+
+        {/* Bubble Visualization - Topic Distribution */}
+        {/* Bubble Visualization - Topic Distribution */}
+        <div className="bg-gray-800/80 backdrop-blur-md border border-gray-700 rounded-2xl p-6 shadow-2xl hover:border-gray-600 transition-all">
+          <h3 className="text-lg font-semibold text-pink-300 mb-4 flex items-center gap-2">
+            <Circle className="w-5 h-5 text-pink-400" />
+            Topic Distribution
+          </h3>
+          <div
+            className="flex justify-center items-center"
+            style={{ height: "300px" }}
+          >
+            {stats.topics && stats.topics.length > 0 ? (
+              <BubbleChart data={stats.topics} />
+            ) : (
+              <p className="text-gray-500 text-sm">No topic data available</p>
+            )}
+          </div>
+          {stats.topics && stats.topics.length > 0 && (
+            <p className="text-xs text-gray-400 text-center mt-2">
+              {stats.topics.length} topics • Hover to see details
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* New Stats Row: Submissions, Active Days, Streak */}
+      <div className="grid md:grid-cols-3 gap-6">
+        {/* Total Submissions */}
+        <div className="bg-gradient-to-br from-cyan-500/10 to-cyan-600/10 border border-cyan-500/30 rounded-xl p-6 hover:border-cyan-400/50 transition-all hover:shadow-xl">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-3 mb-2">
+                <Code className="w-6 h-6 text-cyan-400" />
+                <h4 className="text-sm font-medium text-gray-400">
+                  Total Submissions
+                </h4>
+              </div>
+              <p className="text-4xl font-bold text-white">
+                {stats.totalSubmissions
+                  ? stats.totalSubmissions.toLocaleString()
+                  : "N/A"}
+              </p>
+              
+            </div>
+            <div className="w-16 h-16 bg-cyan-500/20 rounded-full flex items-center justify-center">
+              <Code className="w-8 h-8 text-cyan-400" />
+            </div>
+          </div>
+        </div>
+
+        {/* Total Active Days */}
+        <div className="bg-gradient-to-br from-green-500/10 to-green-600/10 border border-green-500/30 rounded-xl p-6 hover:border-green-400/50 transition-all hover:shadow-xl">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-3 mb-2">
+                <Calendar className="w-6 h-6 text-green-400" />
+                <h4 className="text-sm font-medium text-gray-400">
+                  Active Days
+                </h4>
+              </div>
+              <p className="text-4xl font-bold text-white">
+                {stats.totalActiveDays || 0}
+              </p>
+             
+            </div>
+            <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center">
+              <Calendar className="w-8 h-8 text-green-400" />
+            </div>
+          </div>
+        </div>
+
+        {/* Max Streak */}
+        <div className="bg-gradient-to-br from-orange-500/10 to-orange-600/10 border border-orange-500/30 rounded-xl p-6 hover:border-orange-400/50 transition-all hover:shadow-xl">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-3 mb-2">
+                <Zap className="w-6 h-6 text-orange-400" />
+                <h4 className="text-sm font-medium text-gray-400">
+                  Max Streak
+                </h4>
+              </div>
+              <p className="text-4xl font-bold text-white">
+                {stats.maxStreak || 0}
+              </p>
+              <p className="text-xs text-gray-400 mt-1">
+                Current: {stats.currentStreak || 0} days
+              </p>
+              
+            </div>
+            <div className="w-16 h-16 bg-orange-500/20 rounded-full flex items-center justify-center">
+              <Zap className="w-8 h-8 text-orange-400" />
+            </div>
           </div>
         </div>
       </div>
@@ -297,10 +482,12 @@ const LeetCodeStats = ({ username }) => {
             <div>
               <div className="flex items-center gap-3 mb-2">
                 <Trophy className="w-6 h-6 text-blue-400" />
-                <h4 className="text-sm font-medium text-gray-400">Global Ranking</h4>
+                <h4 className="text-sm font-medium text-gray-400">
+                  Global Ranking
+                </h4>
               </div>
               <p className="text-4xl font-bold text-white">
-                #{stats.ranking ? stats.ranking.toLocaleString() : 'N/A'}
+                #{stats.ranking ? stats.ranking.toLocaleString() : "N/A"}
               </p>
             </div>
             <div className="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center">
@@ -314,9 +501,13 @@ const LeetCodeStats = ({ username }) => {
             <div>
               <div className="flex items-center gap-3 mb-2">
                 <Star className="w-6 h-6 text-purple-400" />
-                <h4 className="text-sm font-medium text-gray-400">Total Problems</h4>
+                <h4 className="text-sm font-medium text-gray-400">
+                  Total Problems
+                </h4>
               </div>
-              <p className="text-4xl font-bold text-white">{stats.totalSolved}</p>
+              <p className="text-4xl font-bold text-white">
+                {stats.totalSolved}
+              </p>
             </div>
             <div className="w-16 h-16 bg-purple-500/20 rounded-full flex items-center justify-center">
               <Code className="w-8 h-8 text-purple-400" />
@@ -327,8 +518,6 @@ const LeetCodeStats = ({ username }) => {
     </div>
   );
 };
-;
-
 // Main Profile Component
 export default function Profile() {
   const { user, updateProfile } = useAuth();
@@ -358,7 +547,10 @@ export default function Profile() {
   const onChange = (e) => {
     const { name, value } = e.target;
     if (["bio", "department", "year", "contact", "leetcode"].includes(name)) {
-      setForm((prev) => ({ ...prev, profile: { ...prev.profile, [name]: value } }));
+      setForm((prev) => ({
+        ...prev,
+        profile: { ...prev.profile, [name]: value },
+      }));
     } else {
       setForm((prev) => ({ ...prev, [name]: value }));
     }
@@ -397,9 +589,19 @@ export default function Profile() {
       <StarField />
       <div className="relative z-10 max-w-7xl mx-auto px-4 py-12">
         {msg && (
-          <div className={`mb-6 p-4 rounded-lg border ${msg.includes("successfully") ? "bg-green-900/50 border-green-700 text-green-200" : "bg-red-900/50 border-red-700 text-red-200"} animate-fade-in`}>
+          <div
+            className={`mb-6 p-4 rounded-lg border ${
+              msg.includes("successfully")
+                ? "bg-green-900/50 border-green-700 text-green-200"
+                : "bg-red-900/50 border-red-700 text-red-200"
+            } animate-fade-in`}
+          >
             <div className="flex items-center gap-2">
-              <div className={`w-2 h-2 rounded-full ${msg.includes("successfully") ? "bg-green-400" : "bg-red-400"}`}></div>
+              <div
+                className={`w-2 h-2 rounded-full ${
+                  msg.includes("successfully") ? "bg-green-400" : "bg-red-400"
+                }`}
+              ></div>
               {msg}
             </div>
           </div>
@@ -421,8 +623,16 @@ export default function Profile() {
                     <span className="text-sm">{user.email}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className={`w-3 h-3 rounded-full ${user.role === "faculty" ? "bg-purple-400" : "bg-blue-400"}`}></div>
-                    <span className="text-sm capitalize font-medium">{user.role}</span>
+                    <div
+                      className={`w-3 h-3 rounded-full ${
+                        user.role === "faculty"
+                          ? "bg-purple-400"
+                          : "bg-blue-400"
+                      }`}
+                    ></div>
+                    <span className="text-sm capitalize font-medium">
+                      {user.role}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -510,7 +720,7 @@ export default function Profile() {
                               @{user.profile.leetcode}
                             </span>
                           </div>
-                          <ExternalLink className="w-5 h-5 text-orange-400 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                          <ExternalLink className="w-5 h-5 text-orange-400  group-hover:-translate-y-0.25 transition-transform" />
                         </a>
                       ) : (
                         <p className="text-gray-400 bg-gray-700/50 p-4 rounded-lg text-center">
@@ -523,7 +733,9 @@ export default function Profile() {
               ) : (
                 <form onSubmit={onSubmit} className="space-y-6">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-gray-300">Full Name</label>
+                    <label className="text-sm font-medium text-gray-300">
+                      Full Name
+                    </label>
                     <input
                       name="name"
                       value={form.name}
@@ -534,7 +746,9 @@ export default function Profile() {
                   </div>
                   <div className="grid md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-300">Department</label>
+                      <label className="text-sm font-medium text-gray-300">
+                        Department
+                      </label>
                       <input
                         name="department"
                         value={form.profile.department}
@@ -545,7 +759,9 @@ export default function Profile() {
                     </div>
                     {user.role !== "faculty" && (
                       <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-300">Year</label>
+                        <label className="text-sm font-medium text-gray-300">
+                          Year
+                        </label>
                         <select
                           name="year"
                           value={form.profile.year}
@@ -563,7 +779,9 @@ export default function Profile() {
                     )}
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-gray-300">Contact</label>
+                    <label className="text-sm font-medium text-gray-300">
+                      Contact
+                    </label>
                     <input
                       name="contact"
                       value={form.profile.contact}
@@ -573,7 +791,9 @@ export default function Profile() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-gray-300">Bio</label>
+                    <label className="text-sm font-medium text-gray-300">
+                      Bio
+                    </label>
                     <textarea
                       name="bio"
                       value={form.profile.bio}
@@ -589,7 +809,9 @@ export default function Profile() {
                       LeetCode Username
                     </h3>
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-300">LeetCode Username</label>
+                      <label className="text-sm font-medium text-gray-300">
+                        LeetCode Username
+                      </label>
                       <input
                         name="leetcode"
                         value={form.profile.leetcode}
@@ -643,13 +865,25 @@ export default function Profile() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="text-gray-400">Account Type</span>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${user.role === "faculty" ? "bg-purple-500/20 text-purple-300" : "bg-blue-500/20 text-blue-300"}`}>
+                  <span
+                    className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      user.role === "faculty"
+                        ? "bg-purple-500/20 text-purple-300"
+                        : "bg-blue-500/20 text-blue-300"
+                    }`}
+                  >
                     {user.role === "faculty" ? "Faculty" : "Student"}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-gray-400">Profile Status</span>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${user.profile?.bio ? "bg-green-500/20 text-green-300" : "bg-orange-500/20 text-orange-300"}`}>
+                  <span
+                    className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      user.profile?.bio
+                        ? "bg-green-500/20 text-green-300"
+                        : "bg-orange-500/20 text-orange-300"
+                    }`}
+                  >
                     {user.profile?.bio ? "Complete" : "Incomplete"}
                   </span>
                 </div>
@@ -666,19 +900,28 @@ export default function Profile() {
                 Quick Actions
               </h3>
               <div className="space-y-3">
-                <a href="/notes" className="w-full block text-left p-3 bg-gray-700/50 hover:bg-gray-700 rounded-lg transition-colors duration-200">
+                <a
+                  href="/notes"
+                  className="w-full block text-left p-3 bg-gray-700/50 hover:bg-gray-700 rounded-lg transition-colors duration-200"
+                >
                   <div className="flex items-center gap-3">
                     <BookOpen className="w-4 h-4 text-blue-400" />
                     <span className="text-sm">Browse Notes</span>
                   </div>
                 </a>
-                <a href="/papers" className="w-full block text-left p-3 bg-gray-700/50 hover:bg-gray-700 rounded-lg transition-colors duration-200">
+                <a
+                  href="/papers"
+                  className="w-full block text-left p-3 bg-gray-700/50 hover:bg-gray-700 rounded-lg transition-colors duration-200"
+                >
                   <div className="flex items-center gap-3">
                     <FileText className="w-4 h-4 text-green-400" />
                     <span className="text-sm">View Papers</span>
                   </div>
                 </a>
-                <a href="/home" className="w-full block text-left p-3 bg-gray-700/50 hover:bg-gray-700 rounded-lg transition-colors duration-200">
+                <a
+                  href="/home"
+                  className="w-full block text-left p-3 bg-gray-700/50 hover:bg-gray-700 rounded-lg transition-colors duration-200"
+                >
                   <div className="flex items-center gap-3">
                     <Clock className="w-4 h-4 text-purple-400" />
                     <span className="text-sm">Study Hub</span>

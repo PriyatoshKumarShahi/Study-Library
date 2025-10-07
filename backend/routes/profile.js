@@ -50,10 +50,9 @@ router.put('/', authenticateToken, async (req, res) => {
   }
 });
 
-// Update coding profiles
 router.put('/coding-profiles', authenticateToken, async (req, res) => {
   try {
-    const { leetcode, codechef, hackerrank } = req.body;
+    const { leetcode } = req.body;
     const user = await User.findById(req.user.id);
 
     if (!user) return res.status(404).json({ message: 'User not found' });
@@ -61,8 +60,6 @@ router.put('/coding-profiles', authenticateToken, async (req, res) => {
     user.profile = {
       ...user.profile.toObject(),
       leetcode: leetcode || user.profile.leetcode,
-      codechef: codechef || user.profile.codechef,
-      hackerrank: hackerrank || user.profile.hackerrank,
     };
 
     await user.save();
@@ -74,5 +71,4 @@ router.put('/coding-profiles', authenticateToken, async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 });
-
 module.exports = router;
