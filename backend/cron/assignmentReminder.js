@@ -68,7 +68,7 @@ AceStudy Team
 
           // Optional: Add an in-app notification
           student.notifications.push({
-            message: `Reminder: Your assignment "${assignment.subject} - ${assignment.assignmentNo}" is due soon! Submit it by tomorrow.`,
+            message: `Reminder: Your assignment " ${assignment.assignmentNo} of ${assignment.subject} " is due soon! If not submitted , then submit it by tomorrow.`,
           });
           await student.save();
 

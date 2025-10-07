@@ -248,7 +248,7 @@ const handleDownload = async (assignmentId, fileUrl, filename) => {
                   <div className="flex flex-col items-end gap-2">
                     <button
                       onClick={() => handleDownload(a._id, a.fileUrl, cleanFilename)}
-                      className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-white flex items-center gap-2"
+                      className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-white flex items-center gap-2 cursor-pointer"
                     >
                       <BookOpen className="w-4 h-4" /> Download PDF
                     </button>

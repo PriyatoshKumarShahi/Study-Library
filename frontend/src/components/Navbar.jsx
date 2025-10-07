@@ -1,15 +1,51 @@
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { GraduationCap, LogOut } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
+import { GraduationCap, LogOut, Bell } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import API from "../api"; // Axios instance
 
 export default function Navbar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-
-  // Track active section for highlighting
   const [activeSection, setActiveSection] = useState("");
+  const [notifications, setNotifications] = useState([]);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      if (!user) return;
+      try {
+        const res = await API.get("/notifications");
+        setNotifications(res.data);
+      } catch (err) {
+        console.error("Error fetching notifications", err);
+      }
+    };
+    fetchNotifications();
+  }, [user]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const markAsRead = async () => {
+    try {
+      await API.put("/notifications/mark-read");
+      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    } catch (err) {
+      console.error("Error marking notifications as read", err);
+    }
+  };
+
+  const unreadCount = notifications.filter((n) => !n.read).length;
 
   useEffect(() => {
     const handleScroll = () => {
@@ -92,20 +128,32 @@ export default function Navbar() {
           <div className="flex items-center gap-6">
             {/* Section navigation */}
             <div className="hidden md:flex items-center gap-6">
-              <span onClick={() => scrollToSection("hero")} className={sectionClasses("hero")}>
+              <span
+                onClick={() => scrollToSection("hero")}
+                className={sectionClasses("hero")}
+              >
                 Home
               </span>
-              <span onClick={() => scrollToSection("about")} className={sectionClasses("about")}>
+              <span
+                onClick={() => scrollToSection("about")}
+                className={sectionClasses("about")}
+              >
                 About
               </span>
 
               {/* Show Features + Resources ONLY when user is NOT logged in */}
               {!user && (
                 <>
-                  <span onClick={() => scrollToSection("features")} className={sectionClasses("features")}>
+                  <span
+                    onClick={() => scrollToSection("features")}
+                    className={sectionClasses("features")}
+                  >
                     Features
                   </span>
-                  <span onClick={() => scrollToSection("resources")} className={sectionClasses("resources")}>
+                  <span
+                    onClick={() => scrollToSection("resources")}
+                    className={sectionClasses("resources")}
+                  >
                     Resources
                   </span>
                 </>
@@ -127,15 +175,22 @@ export default function Navbar() {
 
                 {/* Faculty Dashboard link only for faculty */}
                 {user.role === "faculty" && (
-                  <Link to="/faculty-dashboard" className={linkClasses("/faculty-dashboard")}>
+                  <Link
+                    to="/faculty-dashboard"
+                    className={linkClasses("/faculty-dashboard")}
+                  >
                     Faculty Dashboard
                   </Link>
                 )}
 
                 {/* Student Assignments accessible to all logged-in users */}
-                <Link to="/student-assignments" className={linkClasses("/student-assignments")}>
+                <Link
+                  to="/student-assignments"
+                  className={linkClasses("/student-assignments")}
+                >
                   Assignments
                 </Link>
+               
 
                 {/* Admin link for specific email */}
                 {user.email === "priytoshshahi90@gmail.com" && (
@@ -155,7 +210,9 @@ export default function Navbar() {
                 <div className="flex items-center gap-3">
                   <div className="hidden md:flex flex-col text-sm text-gray-400 leading-tight text-left">
                     <span>Welcome</span>
-                    <span className="text-blue-400 font-medium">{user.name}</span>
+                    <span className="text-blue-400 font-medium">
+                      {user.name}
+                    </span>
                   </div>
 
                   <button
@@ -168,6 +225,66 @@ export default function Navbar() {
                     <LogOut className="w-4 h-4 group-hover:scale-110 transition-transform " />
                     <span>Logout</span>
                   </button>
+                </div>
+                     <div className="relative" ref={dropdownRef}>
+                  <button
+                    onClick={() => {
+                      setShowDropdown((prev) => !prev);
+                      if (unreadCount > 0) markAsRead(); // mark all as read when opened
+                    }}
+                    className="relative p-2 rounded-full hover:bg-gray-700 transition-colors duration-200 cursor-pointer"
+                  >
+                    <Bell className="w-6 h-6 text-gray-300 hover:text-blue-400 transition-colors" />
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-semibold rounded-full w-4 h-4 flex items-center justify-center">
+                        {unreadCount}
+                      </span>
+                    )}
+                  </button>
+
+                  {/* Dropdown */}
+                  {showDropdown && (
+                    <div className="absolute right-0 mt-2 w-80 bg-gray-800/90 border border-gray-700 rounded-xl shadow-2xl overflow-hidden animate-fade-in-up z-50 backdrop-blur-md">
+                      <div className="flex justify-between items-center px-3 py-2 border-b border-gray-700">
+                        <span className="text-sm font-semibold text-gray-300">
+                          Notifications
+                        </span>
+                        {notifications.length > 0 && (
+                          <button
+                            onClick={markAsRead}
+                            className="text-xs text-blue-400 hover:underline"
+                          >
+                            Mark all as read
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="max-h-72 overflow-y-auto custom-scrollbar">
+                        {notifications.length > 0 ? (
+                          notifications.map((notif, i) => (
+                            <div
+                              key={i}
+                              className={`p-3 border-b border-gray-700 last:border-0 cursor-pointer transition
+                ${
+                  notif.read
+                    ? "bg-gray-800 text-gray-400 hover:bg-gray-700/40"
+                    : "bg-gray-700/40 text-white hover:bg-gray-700/60"
+                }`}
+                            >
+                              <div className="text-sm">{notif.message}</div>
+                              <div className="text-xs text-gray-500 mt-1">
+                                {new Date(notif.createdAt).toLocaleString()}
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="p-4 text-gray-500 text-sm text-center">
+                            No notifications
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </>
             ) : (
