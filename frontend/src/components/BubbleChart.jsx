@@ -255,13 +255,13 @@ export default function BubbleChart({ data }) {
             left: `${tooltipPos.x}px`,
             top: `${tooltipPos.y - 10}px`,
             transform: 'translate(-50%, -100%)',
-            background: 'rgba(30, 41, 59, 0.98)',
+            background: 'rgba(31, 41, 55, 0.8)',
             color: '#fff',
             padding: '12px 16px',
             borderRadius: '12px',
             border: `2px solid ${hoveredBubble.color}`,
             fontSize: '13px',
-            fontWeight: '600',
+            fontWeight: '500',
             boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
             backdropFilter: 'blur(10px)',
             pointerEvents: 'none',
@@ -270,18 +270,18 @@ export default function BubbleChart({ data }) {
           }}
         >
           <div style={{
-            marginBottom: '6px',
+            marginBottom: '3px',
             color: hoveredBubble.color,
             fontSize: '14px',
-            fontWeight: '700',
+            fontWeight: '600',
             letterSpacing: '0.5px',
           }}>
             {hoveredBubble.topic}
           </div>
           <div style={{
-            fontSize: '18px',
+            fontSize: '14px',
             color: '#a5f3fc',
-            fontWeight: '700',
+            fontWeight: '600',
           }}>
             {hoveredBubble.count} {hoveredBubble.count === 1 ? 'problem' : 'problems'}
           </div>

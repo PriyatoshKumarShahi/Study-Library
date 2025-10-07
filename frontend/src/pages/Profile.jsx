@@ -262,7 +262,7 @@ const LeetCodeStats = ({ username }) => {
           <span className="text-lg">{error}</span>
           <button
             onClick={fetchStats}
-            className="mt-4 flex items-center gap-2 bg-red-600 hover:bg-red-700 px-6 py-2 rounded-lg transition-colors text-white"
+            className="mt-4 flex items-center gap-2 bg-red-600 hover:bg-red-700 px-6 py-2 rounded-lg transition-colors text-white cursor-pointer"
           >
             Try Again
           </button>
@@ -307,7 +307,7 @@ const LeetCodeStats = ({ username }) => {
           </div>
           <button
             onClick={fetchStats}
-            className="flex items-center gap-2 bg-purple-500 hover:bg-purple-600 px-5 py-2.5 rounded-lg transition-all transform hover:scale-105 shadow-lg"
+            className="flex items-center gap-2 bg-purple-500 hover:bg-purple-600 px-5 py-2.5 rounded-lg transition-all transform hover:scale-105 shadow-lg cursor-pointer"
           >
             <TrendingUp className="w-4 h-4" />
             Refresh Stats
@@ -640,7 +640,7 @@ export default function Profile() {
             {!editing && (
               <button
                 onClick={() => setEditing(true)}
-                className="group flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 px-6 py-3 rounded-lg transition-all duration-200 transform hover:scale-105 cursor-pointer shadow-lg"
+                className="group flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 px-6 py-3 rounded-lg transition-all duration-200 transform hover:scale-105 cursor-pointer shadow-lg "
               >
                 <Edit3 className="w-4 h-4 group-hover:rotate-12 transition-transform" />
                 Edit Profile
@@ -845,7 +845,7 @@ export default function Profile() {
                     <button
                       type="button"
                       onClick={() => setEditing(false)}
-                      className="flex items-center gap-2 bg-gray-700 hover:bg-gray-600 px-6 py-3 rounded-lg transition-colors duration-200"
+                      className="flex items-center gap-2 bg-gray-700 hover:bg-gray-600 px-6 py-3 rounded-lg transition-colors duration-200 cursor-pointer"
                     >
                       <X className="w-4 h-4" />
                       Cancel
