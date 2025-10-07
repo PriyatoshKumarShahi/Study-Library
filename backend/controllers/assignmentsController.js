@@ -120,15 +120,26 @@ exports.deleteAssignment = async (req, res) => {
 
 
 // Increment download count
-exports.incrementDownload = async (req, res) => {
+exports.incrementDownloadController = async (req, res) => {
   try {
-    const { id } = req.params;
-    const assignment = await Assignment.findByIdAndUpdate(id, { $inc: { downloads: 1 } }, { new: true });
+    const assignmentId = req.params.id;
+    if (!assignmentId) return res.status(400).json({ message: "Assignment ID is required" });
+
+    const userId = req.user.id;
+    const assignment = await Assignment.findById(assignmentId);
     if (!assignment) return res.status(404).json({ message: "Assignment not found" });
-    res.json({ message: "Download incremented", downloads: assignment.downloads });
+
+    // Add student to downloads array if not already present
+    if (!assignment.downloads.includes(userId)) {
+      assignment.downloads.push(userId);
+      await assignment.save();
+    }
+
+    // Return updated downloads count
+    res.json({ message: "Download recorded", downloads: assignment.downloads.length });
   } catch (error) {
     console.error("incrementDownload error:", error);
-    res.status(500).json({ message: "Failed to increment download" });
+    res.status(500).json({ message: "Failed to record download", error: error.message });
   }
 };
 

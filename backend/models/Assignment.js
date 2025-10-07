@@ -1,4 +1,3 @@
-// models/Assignment.js
 const mongoose = require('mongoose');
 
 const assignmentSchema = new mongoose.Schema({
@@ -7,12 +6,20 @@ const assignmentSchema = new mongoose.Schema({
   facultyName: { type: String, required: true },
   year: { type: String, required: true },
   branch: { type: String, required: true },
-  deadline: { type: Date, required: true },        // new
+  deadline: { type: Date, required: true },
   description: String,
   fileUrl: { type: String, required: true },
   cloudinaryId: { type: String, required: true },
   uploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  downloads: { type: Number, default: 0 }           // new
+  downloads: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], // store students who downloaded
+  remindersSent: [
+  {
+    studentId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    type: String, 
+    sentAt: Date,
+  },
+],
+
 }, { timestamps: true });
 
 module.exports = mongoose.model('Assignment', assignmentSchema);

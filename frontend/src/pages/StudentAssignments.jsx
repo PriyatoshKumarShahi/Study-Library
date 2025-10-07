@@ -68,43 +68,49 @@ export default function StudentAssignments() {
     }
   };
 
-  const handleDownload = async (assignmentId, fileUrl, filename) => {
-    if (!fileUrl) return toast.error("File URL missing");
+const handleDownload = async (assignmentId, fileUrl, filename) => {
+  if (!fileUrl) return toast.error("File URL missing");
 
-    setDownloading(true);
-    toast.info("Downloading started...");
+  setDownloading(true);
+  toast.info("Downloading started...");
 
-    try {
-      const response = await fetch(fileUrl);
-      if (!response.ok) throw new Error("File download failed");
+  try {
+    // Step 1: Download the actual file
+    const response = await fetch(fileUrl);
+    if (!response.ok) throw new Error("File download failed");
 
-      const blob = await response.blob();
-      const blobUrl = window.URL.createObjectURL(blob);
+    const blob = await response.blob();
+    const blobUrl = window.URL.createObjectURL(blob);
 
-      const link = document.createElement("a");
-      link.href = blobUrl;
-      link.download = filename.endsWith(".pdf") ? filename : `${filename}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(blobUrl);
+    const link = document.createElement("a");
+    link.href = blobUrl;
+    link.download = filename.endsWith(".pdf") ? filename : `${filename}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(blobUrl);
 
-      await API.post(`/assignments/${assignmentId}/download`);
+    // Step 2: Record the download in backend
+    await API.post(`/assignments/${assignmentId}/download`);
 
-      setAssignments((prev) =>
-        prev.map((a) =>
-          a._id === assignmentId ? { ...a, downloads: (a.downloads || 0) + 1 } : a
-        )
-      );
+    // Step 3: Update local state
+    setAssignments((prev) =>
+      prev.map((a) =>
+        a._id === assignmentId ? { ...a, downloads: (a.downloads || 0) + 1 } : a
+      )
+    );
 
-      toast.success("Download completed");
-    } catch (error) {
-      console.error("Download failed:", error);
-      toast.error(error.message || "Download failed");
-    } finally {
-      setDownloading(false);
-    }
-  };
+    toast.success("Download completed");
+  } catch (error) {
+    console.error("Download failed:", error);
+    toast.error(error.message || "Download failed");
+  } finally {
+    setDownloading(false);
+  }
+};
+
+
+
 
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this assignment?")) return;

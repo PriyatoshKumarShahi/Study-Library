@@ -12,21 +12,25 @@ const ProfileSchema = new mongoose.Schema({
   hackerrank: { type: String, default: "" },
 });
 
-const UserSchema = new mongoose.Schema(
-  {
-    name: { type: String, required: true },
-    email: { type: String, required: true, unique: true, lowercase: true },
-    password: { type: String, required: true },
-    role: {
-      type: String,
-      enum: ["student", "faculty", "admin"],
-      default: "student",
-    },
-    bookmarks: [{ type: mongoose.Schema.Types.ObjectId, ref: "Notes"}],
-    paperBookmarks: [{ type: mongoose.Schema.Types.ObjectId, ref: "Papers"}],
-    profile: { type: ProfileSchema, default: () => ({}) },
+const UserSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  email: { type: String, required: true, unique: true, lowercase: true },
+  password: { type: String, required: true },
+  role: {
+    type: String,
+    enum: ["student", "faculty", "admin"],
+    default: "student",
   },
-  { timestamps: true }
-);
+  bookmarks: [{ type: mongoose.Schema.Types.ObjectId, ref: "Notes" }],
+  paperBookmarks: [{ type: mongoose.Schema.Types.ObjectId, ref: "Papers" }],
+  profile: { type: ProfileSchema, default: () => ({}) },
+  notifications: [
+    {
+      message: String,
+      read: { type: Boolean, default: false },
+      createdAt: { type: Date, default: Date.now },
+    },
+  ],
+}, { timestamps: true });
 
 module.exports = mongoose.model("User", UserSchema);
