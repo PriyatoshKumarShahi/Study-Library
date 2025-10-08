@@ -1,22 +1,22 @@
-require('dotenv').config();
-require('./cron/assignmentReminder'); 
-
 const express = require('express');
 const cors = require('cors');
 const connectDB = require('./config/db');
-const http = require("http");
-const { Server } = require("socket.io");
+const http = require('http');
+const { Server } = require('socket.io');
+require('dotenv').config();
 
+// Routes
+const askAceRouter = require('./routes/askAce');
 const authRoutes = require('./routes/auth');
 const profileRoutes = require('./routes/profile');
 const notesRoutes = require('./routes/notes');
 const papersRoutes = require('./routes/papers');
 const usersRoutes = require('./routes/users');
 const assignmentsRoutes = require('./routes/assignments');
-const bookmarkRoutes = require("./routes/bookmarkRoutes");
-const forumRoutes = require("./routes/forum");
-const statsRoutes = require("./routes/codingStats")
-const notificationRoutes  = require("./routes/notifications")
+const bookmarkRoutes = require('./routes/bookmarkRoutes');
+const forumRoutes = require('./routes/forum');
+const statsRoutes = require('./routes/codingStats');
+const notificationRoutes = require('./routes/notifications');
 const errorHandler = require('./middleware/errorHandler');
 const createDefaultAdmin = require('./utils/initAdmin');
 
@@ -36,19 +36,14 @@ createDefaultAdmin();
 
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: {
-    origin: process.env.CLIENT_URL || "http://localhost:5173",
-    credentials: true
-  }
+  cors: { origin: process.env.CLIENT_URL || "http://localhost:5173", credentials: true }
 });
 
-// pass io to routes
-app.use((req, res, next) => {
-  req.io = io;
-  next();
-});
+// Make socket.io available in routes
+app.use((req, res, next) => { req.io = io; next(); });
 
 // Routes
+app.use('/api/askace', askAceRouter); // New AskAce route
 app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/notes', notesRoutes);
@@ -59,7 +54,6 @@ app.use("/api/bookmarks", bookmarkRoutes);
 app.use("/api/forum", forumRoutes);
 app.use("/api/coding-stats", statsRoutes);
 app.use("/api/notifications", notificationRoutes);
-
 
 app.use(errorHandler);
 

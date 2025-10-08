@@ -1,4 +1,3 @@
-// src/App.jsx
 import React from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import Register from './pages/Register';
@@ -16,14 +15,19 @@ import FacultyDashboard from './pages/FacultyDashboard';
 import StudentAssignments from './pages/StudentAssignments';
 import Forum from './pages/ForumDashboard';  
 import ChannelPage from './pages/ChannelPage';
+import AskAce from './components/AskAce'; // Import AskAce
 
 function Layout({ children }) {
   const location = useLocation();
   const hideNavbar = ['/login', '/register'].includes(location.pathname);
+  
   return (
     <div className="bg-gray-900 text-white min-h-screen">
       {!hideNavbar && <Navbar />}
       {children}
+      
+      {/* AskAce Chatbot - Available on all pages */}
+      <AskAce />
     </div>
   );
 }
