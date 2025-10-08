@@ -1,6 +1,6 @@
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import { GraduationCap, LogOut, Bell } from "lucide-react";
+import { GraduationCap, LogOut, Bell, Trash2 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import API from "../api"; // Axios instance
 
@@ -226,66 +226,103 @@ export default function Navbar() {
                     <span>Logout</span>
                   </button>
                 </div>
-                     <div className="relative" ref={dropdownRef}>
-                  <button
-                    onClick={() => {
-                      setShowDropdown((prev) => !prev);
-                      if (unreadCount > 0) markAsRead(); // mark all as read when opened
-                    }}
-                    className="relative p-2 rounded-full hover:bg-gray-700 transition-colors duration-200 cursor-pointer"
-                  >
-                    <Bell className="w-6 h-6 text-gray-300 hover:text-blue-400 transition-colors" />
-                    {unreadCount > 0 && (
-                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-semibold rounded-full w-4 h-4 flex items-center justify-center">
-                        {unreadCount}
-                      </span>
-                    )}
-                  </button>
+                    <div className="relative" ref={dropdownRef}>
+  <button
+    onClick={() => {
+      setShowDropdown((prev) => !prev);
+      if (unreadCount > 0) markAsRead(); // mark all as read when opened
+    }}
+    className="relative p-2 rounded-full hover:bg-gray-700 transition-colors duration-200 cursor-pointer"
+  >
+    <Bell className="w-6 h-6 text-gray-300 hover:text-blue-400 transition-colors" />
+    {unreadCount > 0 && (
+      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-semibold rounded-full w-4 h-4 flex items-center justify-center">
+        {unreadCount}
+      </span>
+    )}
+  </button>
 
-                  {/* Dropdown */}
-                  {showDropdown && (
-                    <div className="absolute right-0 mt-2 w-80 bg-gray-800/90 border border-gray-700 rounded-xl shadow-2xl overflow-hidden animate-fade-in-up z-50 backdrop-blur-md">
-                      <div className="flex justify-between items-center px-3 py-2 border-b border-gray-700">
-                        <span className="text-sm font-semibold text-gray-300">
-                          Notifications
-                        </span>
-                        {notifications.length > 0 && (
-                          <button
-                            onClick={markAsRead}
-                            className="text-xs text-blue-400 hover:underline"
-                          >
-                            Mark all as read
-                          </button>
-                        )}
-                      </div>
+  {/* Dropdown */}
+  {showDropdown && (
+    <div className="absolute right-0 mt-2 w-80 bg-gray-800/90 border border-gray-700 rounded-xl shadow-2xl overflow-hidden animate-fade-in-up z-50 backdrop-blur-md">
+      {/* Header */}
+      <div className="flex justify-between items-center px-3 py-2 border-b border-gray-700">
+        <span className="text-sm font-semibold text-gray-300">Notifications</span>
 
-                      <div className="max-h-72 overflow-y-auto custom-scrollbar">
-                        {notifications.length > 0 ? (
-                          notifications.map((notif, i) => (
-                            <div
-                              key={i}
-                              className={`p-3 border-b border-gray-700 last:border-0 cursor-pointer transition
+        {notifications.length > 0 && (
+          <div className="flex items-center gap-3">
+            <button
+              onClick={markAsRead}
+              className="text-xs text-blue-400 hover:underline"
+            >
+              Mark all as read
+            </button>
+            <button
+              onClick={async () => {
+                try {
+                  await API.delete("/notifications/clear");
+                  setNotifications([]);
+                } catch (err) {
+                  console.error("Error clearing notifications", err);
+                }
+              }}
+              className="text-xs text-red-400 hover:underline"
+            >
+              Clear all
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Notification list */}
+      <div className="max-h-72 overflow-y-auto custom-scrollbar">
+        {notifications.length > 0 ? (
+          notifications.map((notif, i) => (
+            <div
+              key={i}
+              className={`p-3 border-b border-gray-700 last:border-0 flex justify-between items-start gap-2 transition cursor-pointer
                 ${
                   notif.read
                     ? "bg-gray-800 text-gray-400 hover:bg-gray-700/40"
                     : "bg-gray-700/40 text-white hover:bg-gray-700/60"
                 }`}
-                            >
-                              <div className="text-sm">{notif.message}</div>
-                              <div className="text-xs text-gray-500 mt-1">
-                                {new Date(notif.createdAt).toLocaleString()}
-                              </div>
-                            </div>
-                          ))
-                        ) : (
-                          <div className="p-4 text-gray-500 text-sm text-center">
-                            No notifications
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
+            >
+              <div className="flex-1">
+                <div className="text-sm">{notif.message}</div>
+                <div className="text-xs text-gray-500 mt-1">
+                  {new Date(notif.createdAt).toLocaleString()}
                 </div>
+              </div>
+
+              {/* 🗑️ Delete button */}
+              <button
+                onClick={async () => {
+                  try {
+                    await API.delete(`/notifications/${notif._id}`);
+                    setNotifications((prev) =>
+                      prev.filter((n) => n._id !== notif._id)
+                    );
+                  } catch (err) {
+                    console.error("Error deleting notification", err);
+                  }
+                }}
+                className="text-gray-400 hover:text-red-400 transition cursor-pointer"
+                title="Delete notification"
+              >
+                <Trash2 size={16} />
+              </button>
+            </div>
+          ))
+        ) : (
+          <div className="p-4 text-gray-500 text-sm text-center">
+            No notifications
+          </div>
+        )}
+      </div>
+    </div>
+  )}
+</div>
+
               </>
             ) : (
               <>

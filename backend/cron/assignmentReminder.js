@@ -1,7 +1,7 @@
-import cron from "node-cron";
-import Assignment from "../models/Assignment.js";
-import User from "../models/User.js";
-import sendMail from "../utils/sendMail.js";
+const cron = require("node-cron");
+const Assignment = require("../models/Assignment");
+const User = require("../models/User");
+const sendMail = require("../utils/sendMail");
 
 // Runs once every hour
 cron.schedule("0 * * * *", async () => {
@@ -17,12 +17,12 @@ cron.schedule("0 * * * *", async () => {
     for (let { label, offsetHours } of reminderWindows) {
       const reminderTime = new Date(now.getTime() + offsetHours * 60 * 60 * 1000);
 
-      // Find assignments due roughly around the reminder time (within 1 hour)
+      // Find assignments due roughly around the reminder time (±30 min)
+      const windowStart = new Date(reminderTime.getTime() - 30 * 60 * 1000);
+      const windowEnd = new Date(reminderTime.getTime() + 30 * 60 * 1000);
+
       const assignments = await Assignment.find({
-        deadline: {
-          $gte: reminderTime,
-          $lt: new Date(reminderTime.getTime() + 60 * 60 * 1000),
-        },
+        deadline: { $gte: windowStart, $lt: windowEnd },
       }).populate("downloads");
 
       for (let assignment of assignments) {
@@ -32,8 +32,10 @@ cron.schedule("0 * * * *", async () => {
 
           // ✅ Prevent duplicate mails for same reminder type
           if (!assignment.remindersSent) assignment.remindersSent = [];
+
           const alreadySent = assignment.remindersSent.find(
-            (r) => r.studentId.toString() === studentId.toString() && r.type === label
+            (r) =>
+              r.studentId.toString() === studentId.toString() && r.type === label
           );
           if (alreadySent) continue;
 
@@ -42,16 +44,14 @@ cron.schedule("0 * * * *", async () => {
           );
 
           const subject = `⏰ Reminder: Assignment "${assignment.subject}" due soon`;
-
           const body = `
 Hi ${student.name},
 
-This is a friendly reminder that your assignment ${assignment.assignmentNo} of **"${assignment.subject}  "** is due soon.
+This is a friendly reminder that your assignment ${assignment.assignmentNo} of "${assignment.subject}" is due soon.
 
 🕓 Deadline: ${new Date(assignment.deadline).toLocaleString()}
 
 If you haven’t submitted it yet, please make sure to do so **by tomorrow** to avoid missing the deadline.
-Submitting early helps you avoid last-minute rushes and gives time to review your work carefully.
 
 A few quick tips to stay on track:
 - Recheck the requirements once more.
@@ -66,15 +66,15 @@ AceStudy Team
 
           await sendMail(student.email, subject, body);
 
-          // Optional: Add an in-app notification
+          // Add an in-app notification
           student.notifications.push({
-            message: `Reminder: Your assignment " ${assignment.assignmentNo} of ${assignment.subject} " is due soon! If not submitted , then submit it by tomorrow.`,
+            message: `Reminder: Your assignment ${assignment.assignmentNo} of "${assignment.subject}" is due soon! If not submitted, then submit it by tomorrow.`,
           });
           await student.save();
 
           // ✅ Mark reminder as sent
           assignment.remindersSent.push({
-            studentId,
+            studentId: student._id,
             type: label,
             sentAt: new Date(),
           });
@@ -86,3 +86,5 @@ AceStudy Team
     console.error("❌ Error in assignment reminder cron:", error);
   }
 });
+
+module.exports = cron;

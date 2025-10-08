@@ -44,4 +44,30 @@ router.put("/mark-read", authenticateToken, async (req, res) => {
   }
 });
 
+
+router.delete("/:id", authenticateToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    user.notifications = user.notifications.filter(
+      (n) => n._id.toString() !== req.params.id
+    );
+    await user.save();
+    res.json({ message: "Notification deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to delete notification" });
+  }
+});
+
+router.delete("/clear", authenticateToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    user.notifications = [];
+    await user.save();
+    res.json({ message: "All notifications cleared" });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to clear notifications" });
+  }
+});
+
+
 module.exports = router;
