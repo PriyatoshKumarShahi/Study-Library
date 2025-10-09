@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MessageCircle, X, Send, Trash2, Loader2, Sparkles } from 'lucide-react';
+import { MessageCircle, X, Send, Trash2, Loader2, Sparkles, Mic, MicOff } from 'lucide-react';
 import '../styles/AskAce.css';
 import API from '../api';
 
@@ -9,10 +9,11 @@ const AskAce = () => {
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [isRecording, setIsRecording] = useState(false);
   const messagesEndRef = useRef(null);
   const chatPanelRef = useRef(null);
+  const recognitionRef = useRef(null);
 
-  // Load chat history from localStorage on mount
   useEffect(() => {
     const savedMessages = localStorage.getItem('askace_messages');
     if (savedMessages) {
@@ -21,7 +22,7 @@ const AskAce = () => {
         const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
         const recentMessages = parsed.filter(msg => msg.timestamp > sevenDaysAgo);
         setMessages(recentMessages);
-        
+
         if (recentMessages.length !== parsed.length) {
           localStorage.setItem('askace_messages', JSON.stringify(recentMessages));
         }
@@ -30,21 +31,47 @@ const AskAce = () => {
         localStorage.removeItem('askace_messages');
       }
     }
+
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = false;
+      recognitionRef.current.interimResults = false;
+      recognitionRef.current.lang = 'en-US';
+
+      recognitionRef.current.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        setInputMessage(prev => prev + (prev ? ' ' : '') + transcript);
+        setIsRecording(false);
+      };
+
+      recognitionRef.current.onerror = (event) => {
+        console.error('Speech recognition error:', event.error);
+        setIsRecording(false);
+      };
+
+      recognitionRef.current.onend = () => {
+        setIsRecording(false);
+      };
+    }
+
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+    };
   }, []);
 
-  // Save messages to localStorage whenever they change
   useEffect(() => {
     if (messages.length > 0) {
       localStorage.setItem('askace_messages', JSON.stringify(messages));
     }
   }, [messages]);
 
-  // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
-  // Clean up old messages daily
   useEffect(() => {
     const cleanupInterval = setInterval(() => {
       const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
@@ -101,7 +128,7 @@ const AskAce = () => {
       console.error("[Frontend] Error response:", error.response?.data);
 
       let errorText = "I'm sorry, I encountered an error. Please try again!";
-      
+
       if (error.response?.data?.error) {
         errorText = error.response.data.error;
       } else if (error.response?.data?.details) {
@@ -171,7 +198,7 @@ const AskAce = () => {
 
     } catch (error) {
       console.error("[Frontend] Error fetching summary:", error);
-      
+
       const errorMessage = {
         id: Date.now(),
         text: "Failed to generate summary. Please try again.",
@@ -179,10 +206,25 @@ const AskAce = () => {
         timestamp: Date.now(),
         isError: true
       };
-      
+
       setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const toggleRecording = () => {
+    if (!recognitionRef.current) {
+      alert('Speech recognition is not supported in your browser. Please use Chrome, Edge, or Safari.');
+      return;
+    }
+
+    if (isRecording) {
+      recognitionRef.current.stop();
+      setIsRecording(false);
+    } else {
+      recognitionRef.current.start();
+      setIsRecording(true);
     }
   };
 
@@ -195,8 +237,7 @@ const AskAce = () => {
 
   return (
     <>
-      {/* Floating Chat Icon */}
-      <div 
+      <div
         className={`chat-icon ${isOpen ? 'hidden' : ''}`}
         onClick={toggleChat}
       >
@@ -206,9 +247,7 @@ const AskAce = () => {
         )}
       </div>
 
-      {/* Chat Panel */}
       <div className={`chat-panel ${isOpen ? 'open' : ''}`} ref={chatPanelRef}>
-        {/* Header */}
         <div className="chat-header">
           <div className="header-content">
             <div className="logo-section">
@@ -224,7 +263,6 @@ const AskAce = () => {
           </div>
         </div>
 
-        {/* Messages Container */}
         <div className="messages-container">
           {messages.length === 0 ? (
             <div className="welcome-message">
@@ -251,9 +289,9 @@ const AskAce = () => {
                     <div className="message-text">{message.text}</div>
                     <div className="message-footer">
                       <span className="message-time">
-                        {new Date(message.timestamp).toLocaleTimeString([], { 
-                          hour: '2-digit', 
-                          minute: '2-digit' 
+                        {new Date(message.timestamp).toLocaleTimeString([], {
+                          hour: '2-digit',
+                          minute: '2-digit'
                         })}
                       </span>
                       <button
@@ -280,11 +318,10 @@ const AskAce = () => {
           )}
         </div>
 
-        {/* Action Buttons */}
         {messages.length > 0 && (
           <div className="action-buttons">
             {messages.length > 5 && (
-              <button 
+              <button
                 className="summarize-btn"
                 onClick={summarizeConversation}
                 disabled={isLoading}
@@ -292,17 +329,16 @@ const AskAce = () => {
                 📝 Summarize
               </button>
             )}
-            <button 
+            <button
               className="clear-btn"
               onClick={clearHistory}
               disabled={isLoading}
             >
-              🗑️ Clear History
+              <Trash2 size={16} /> Clear History
             </button>
           </div>
         )}
 
-        {/* Input Area */}
         <div className="input-area">
           <textarea
             value={inputMessage}
@@ -312,7 +348,15 @@ const AskAce = () => {
             rows="1"
             disabled={isLoading}
           />
-          <button 
+          <button
+            className={`mic-btn ${isRecording ? 'recording' : ''}`}
+            onClick={toggleRecording}
+            disabled={isLoading}
+            title={isRecording ? "Stop recording" : "Start voice input"}
+          >
+            {isRecording ? <MicOff size={20} /> : <Mic size={20} />}
+          </button>
+          <button
             className="send-btn"
             onClick={sendMessage}
             disabled={isLoading || !inputMessage.trim()}

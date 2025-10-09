@@ -1,4 +1,7 @@
+// ============================
 // backend/controllers/askAceController.js
+// ============================
+
 const fetch = require("node-fetch");
 const ChatSession = require("../models/ChatSession");
 
@@ -30,6 +33,12 @@ function categorizeQuery(message) {
 
 // Generate prompt
 function generatePrompt(message, category, chatHistory = []) {
+  // If the user only sent a greeting, reply with a short greeting and no context
+  const trimmed = (message || "").trim();
+  if (["hi", "hello", "hey", "hii"].includes(trimmed.toLowerCase())) {
+    return `You are AskAce, a friendly AI assistant. Reply with a short greeting only: "Hi! How can I help you today?" Do not reference previous conversation.`;
+  }
+
   let guidance = "";
 
   switch (category) {
@@ -44,14 +53,18 @@ function generatePrompt(message, category, chatHistory = []) {
       break;
   }
 
+  // Important instruction: don't add greetings or refer to previous conversation unless user explicitly asks.
+  const instruction = `IMPORTANT: Do NOT add any greeting, sign-off, or mention previous Q&A unless the user explicitly asked to continue. Answer only the question the user asked. If there are steps or points, use bullet points. Keep answer focused and concise.`;
+
   let contextText = "";
   if (chatHistory && chatHistory.length > 0) {
-    const recentHistory = chatHistory.slice(-4);
-    contextText = "\n\nPrevious conversation:\n" + 
+    // Include previous conversation only if the user explicitly references it in the message (we'll give the model the option but tell it to ignore otherwise)
+    const recentHistory = chatHistory.slice(-6);
+    contextText = "\n\nPrevious conversation (only use if user asked to continue or referenced it):\n" +
       recentHistory.map(msg => `${msg.sender === 'user' ? 'User' : 'AskAce'}: ${msg.text}`).join("\n");
   }
 
-  return `You are AskAce, a friendly AI assistant. ${guidance}\n\nUser message: "${message}"${contextText}\n\nProvide a clear, helpful response with bullet points where useful.`;
+  return `You are AskAce, a friendly AI assistant. ${guidance}\n\n${instruction}\n\nUser message: "${message}"${contextText}\n\nProvide a clear, helpful response with bullet points where useful. Do NOT include decorative characters (no stars, emojis only if relevant).`;
 }
 
 // Find a working model by trying different options
@@ -234,3 +247,8 @@ exports.handleAskAce = async (req, res) => {
     });
   }
 };
+
+
+// ============================
+// src/components/AskAce.jsx  (Frontend React component - complete single-file with styles)
+// ============================
