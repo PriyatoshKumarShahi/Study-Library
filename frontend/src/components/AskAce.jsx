@@ -78,14 +78,14 @@ const AskAce = () => {
 
       const response = await API.post('/askace', {
         message: currentInput,
-        chatHistory: messages // Send previous messages for context
+        chatHistory: messages.map(msg => ({ sender: msg.sender, text: msg.text }))
       });
 
       console.log("[Frontend] Response received:", response.data);
 
       const aiMessage = {
         id: Date.now() + 1,
-        text: response.data.text || "No response from AI",
+        text: response.data.text || response.data.reply || "No response from AI",
         sender: 'ai',
         timestamp: Date.now()
       };
@@ -98,11 +98,14 @@ const AskAce = () => {
 
     } catch (error) {
       console.error("[Frontend] Error:", error);
+      console.error("[Frontend] Error response:", error.response?.data);
 
       let errorText = "I'm sorry, I encountered an error. Please try again!";
       
       if (error.response?.data?.error) {
         errorText = error.response.data.error;
+      } else if (error.response?.data?.details) {
+        errorText = `${error.response.data.error}\nDetails: ${error.response.data.details}`;
       } else if (error.message) {
         errorText = `Error: ${error.message}`;
       }
@@ -132,6 +135,13 @@ const AskAce = () => {
     }
   };
 
+  const clearHistory = () => {
+    if (window.confirm('Are you sure you want to clear all chat history?')) {
+      setMessages([]);
+      localStorage.removeItem('askace_messages');
+    }
+  };
+
   const summarizeConversation = async () => {
     if (messages.length === 0) return;
 
@@ -151,7 +161,7 @@ const AskAce = () => {
 
       const summaryMessage = {
         id: Date.now(),
-        text: `📝 **Conversation Summary:**\n\n${response.data.text}`,
+        text: `📝 **Conversation Summary:**\n\n${response.data.text || response.data.reply}`,
         sender: 'ai',
         timestamp: Date.now(),
         isSummary: true
@@ -271,14 +281,23 @@ const AskAce = () => {
         </div>
 
         {/* Action Buttons */}
-        {messages.length > 5 && (
+        {messages.length > 0 && (
           <div className="action-buttons">
+            {messages.length > 5 && (
+              <button 
+                className="summarize-btn"
+                onClick={summarizeConversation}
+                disabled={isLoading}
+              >
+                📝 Summarize
+              </button>
+            )}
             <button 
-              className="summarize-btn"
-              onClick={summarizeConversation}
+              className="clear-btn"
+              onClick={clearHistory}
               disabled={isLoading}
             >
-              📝 Summarize Conversation
+              🗑️ Clear History
             </button>
           </div>
         )}
@@ -307,4 +326,3 @@ const AskAce = () => {
 };
 
 export default AskAce;
-

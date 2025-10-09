@@ -1,12 +1,15 @@
 // backend/controllers/askAceController.js
-const axios = require("axios");
+const fetch = require("node-fetch");
 const ChatSession = require("../models/ChatSession");
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const FREE_MODEL = "models/text-bison-001";
-const FREE_API_VERSION = "v1";
 
-if (!GEMINI_API_KEY) console.error("Gemini API key is missing!");
+if (!GEMINI_API_KEY) {
+  console.error("⚠️ Gemini API key is missing!");
+}
+
+// Cache for working model (so we don't test every time)
+let cachedWorkingModel = null;
 
 // --- Helper functions ---
 const generateTitle = (message) => {
@@ -14,88 +17,165 @@ const generateTitle = (message) => {
   return words.slice(0, 5).join(" ") + (words.length > 5 ? "..." : "");
 };
 
-// Categorize query into study / counselling / general
+// Categorize query
 function categorizeQuery(message) {
   const lower = message.toLowerCase();
-  const studyKeywords = ["study", "exam", "homework", "assignment", "coding", "practice"];
-  const counsellingKeywords = ["stress", "anxiety", "motivation", "focus", "planning", "advice"];
+  const studyKeywords = ["study", "exam", "homework", "assignment", "coding", "practice", "learn"];
+  const counsellingKeywords = ["stress", "anxiety", "motivation", "focus", "planning", "advice", "help"];
 
   if (studyKeywords.some((w) => lower.includes(w))) return "study";
   if (counsellingKeywords.some((w) => lower.includes(w))) return "counselling";
   return "general";
 }
 
-// Generate prompt based on category
-function generatePrompt(message, category) {
+// Generate prompt
+function generatePrompt(message, category, chatHistory = []) {
   let guidance = "";
 
   switch (category) {
     case "study":
-      guidance = `
-**Study Guidance:**
-- Explain concepts clearly and step-by-step
-- Give examples and practice problems
-- Offer coding/study tips and motivation
-- Provide hints without full solutions if requested`;
+      guidance = "Explain concepts clearly with examples. Offer study tips and motivation.";
       break;
-
     case "counselling":
-      guidance = `
-**Counselling / Motivation:**
-- Give supportive and encouraging advice
-- Provide focus and time management tips
-- Suggest stress-relief techniques
-- Use empathetic, friendly tone`;
+      guidance = "Give supportive advice. Provide stress-relief techniques in a friendly tone.";
       break;
-
-    case "general":
     default:
-      guidance = `
-**General Advice:**
-- Answer user's query clearly and helpfully
-- Be concise but thorough
-- Keep responses friendly and motivating`;
+      guidance = "Answer clearly and helpfully. Be concise, friendly and motivating.";
       break;
   }
 
-  return `You are AskAce, a friendly AI assistant. Respond to the user's message: "${message}".
-${guidance}
-**Response Format:**
-- Use headings and bullet points where helpful
-- Keep the response clear, actionable, and friendly`;
+  let contextText = "";
+  if (chatHistory && chatHistory.length > 0) {
+    const recentHistory = chatHistory.slice(-4);
+    contextText = "\n\nPrevious conversation:\n" + 
+      recentHistory.map(msg => `${msg.sender === 'user' ? 'User' : 'AskAce'}: ${msg.text}`).join("\n");
+  }
+
+  return `You are AskAce, a friendly AI assistant. ${guidance}\n\nUser message: "${message}"${contextText}\n\nProvide a clear, helpful response with bullet points where useful.`;
 }
 
-// --- Controller ---
+// Find a working model by trying different options
+async function findWorkingModel() {
+  if (cachedWorkingModel) {
+    console.log(`✨ Using cached model: ${cachedWorkingModel}`);
+    return cachedWorkingModel;
+  }
+
+  console.log("🔍 Testing available models...");
+  
+  // Try these models in order (most common free models)
+  const modelsToTry = [
+    "gemini-1.5-flash-latest",
+    "gemini-1.5-flash",
+    "gemini-1.5-flash-002",
+    "gemini-1.5-pro-latest", 
+    "gemini-1.5-pro",
+    "gemini-pro",
+    "gemini-2.0-flash-exp",
+    "text-bison-001"
+  ];
+
+  for (const modelName of modelsToTry) {
+    try {
+      console.log(`   Testing: ${modelName}...`);
+      
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${GEMINI_API_KEY}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: "Hi" }] }]
+          })
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data?.candidates?.[0]?.content?.parts?.[0]?.text) {
+          console.log(`   ✅ ${modelName} works!`);
+          cachedWorkingModel = modelName;
+          return modelName;
+        }
+      }
+    } catch (error) {
+      console.log(`   ❌ ${modelName} failed`);
+    }
+  }
+
+  throw new Error("No working models found. Please check your API key.");
+}
+
+// Make API call with the working model
+async function callGeminiAPI(prompt) {
+  const modelName = await findWorkingModel();
+  
+  console.log(`📡 Calling Gemini API with model: ${modelName}`);
+  
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${GEMINI_API_KEY}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }]
+      })
+    }
+  );
+
+  const data = await response.json();
+  
+  if (!response.ok) {
+    throw new Error(data?.error?.message || "API request failed");
+  }
+
+  return data;
+}
+
+// --- Main Controller ---
 exports.handleAskAce = async (req, res) => {
   try {
-    const { message, userId, sessionId, isNewSession } = req.body;
+    console.log("📨 Received request");
+
+    const { message, userId, sessionId, isNewSession, chatHistory } = req.body;
+
+    if (!message || message.trim() === "") {
+      return res.status(400).json({ error: "Message cannot be empty" });
+    }
+
+    if (!GEMINI_API_KEY) {
+      return res.status(500).json({ 
+        error: "Gemini API key is not configured. Please add GEMINI_API_KEY to your .env file." 
+      });
+    }
 
     const category = categorizeQuery(message);
-    const prompt = generatePrompt(message, category);
+    const prompt = generatePrompt(message, category, chatHistory);
 
-    const apiUrl = `https://generativelanguage.googleapis.com/${FREE_API_VERSION}/${FREE_MODEL}:generateText?key=${GEMINI_API_KEY}`;
+    console.log("🤖 Category:", category);
 
-    // --- Call Gemini API ---
-    const { data } = await axios.post(
-      apiUrl,
-      {
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.7, maxOutputTokens: 1024 }
-      },
-      { headers: { "Content-Type": "application/json" } }
-    );
+    // Call Gemini API
+    const data = await callGeminiAPI(prompt);
 
-    let reply =
-      data?.candidates?.[0]?.content?.parts?.[0]?.text ||
-      "Sorry, I couldn't generate a response.";
+    // Extract reply
+    let reply = data?.candidates?.[0]?.content?.parts?.[0]?.text;
 
-    // --- Handle new session ---
+    if (!reply) {
+      console.error("❌ No reply in response");
+      return res.status(500).json({ 
+        error: "I apologize, but I couldn't generate a response. Please try again!"
+      });
+    }
+
+    console.log("✅ Success! Reply length:", reply.length);
+
+    // Handle new session
     if (isNewSession && userId) {
       const newSessionId = sessionId || Date.now().toString();
       const title = generateTitle(message);
 
       const initialMessages = [
-        { sender: "ai", text: "Hello! I'm AskAce, your study & motivation assistant.", time: new Date() },
+        { sender: "ai", text: "Hello! I'm AskAce, your study & motivation assistant. How can I help you today?", time: new Date() },
         { sender: "user", text: message, time: new Date() },
         { sender: "ai", text: reply, time: new Date() }
       ];
@@ -109,10 +189,10 @@ exports.handleAskAce = async (req, res) => {
       });
 
       await newSession.save();
-      return res.json({ reply, sessionId: newSessionId, title, session: newSession });
+      return res.json({ text: reply, sessionId: newSessionId, title, session: newSession });
     }
 
-    // --- Update existing session ---
+    // Update existing session
     if (sessionId && userId) {
       const session = await ChatSession.findOne({ sessionId });
       if (session) {
@@ -122,14 +202,35 @@ exports.handleAskAce = async (req, res) => {
         );
         session.lastUpdated = new Date();
         await session.save();
-        return res.json({ reply, session });
+        return res.json({ text: reply, session });
       }
     }
 
-    // Fallback response
-    res.json({ reply });
+    // Fallback response (no session)
+    res.json({ text: reply });
+
   } catch (err) {
-    console.error("AskAce error:", err.response?.data || err.message);
-    res.status(500).json({ error: "Failed to generate AI response" });
+    console.error("❌ Error:", err.message);
+    
+    let errorMessage = "I'm sorry, I encountered an error. Please try again!";
+    let errorDetails = err.message;
+    
+    if (err.message.includes("API key expired")) {
+      errorMessage = "⚠️ Your API key has expired. Please generate a new one from Google AI Studio.";
+    } else if (err.message.includes("API key not valid")) {
+      errorMessage = "⚠️ Your API key is invalid. Please check your .env file.";
+    } else if (err.message.includes("quota")) {
+      errorMessage = "⚠️ API quota exceeded. Please try again later.";
+    } else if (err.message.includes("No working models")) {
+      errorMessage = "⚠️ No available models found. Your API key may not have access to any Gemini models. Please:\n1. Generate a NEW API key from https://aistudio.google.com/app/apikey\n2. Make sure you're creating a key in the FREE tier\n3. Update your .env file";
+      errorDetails = "Try creating a new API key from Google AI Studio";
+    } else if (err.message.includes("fetch")) {
+      errorMessage = "Network error. Please check your internet connection.";
+    }
+    
+    res.status(500).json({ 
+      error: errorMessage,
+      details: errorDetails
+    });
   }
 };
