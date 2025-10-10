@@ -20,6 +20,8 @@ import AskAce from './components/AskAce'; // Import AskAce
 function Layout({ children }) {
   const location = useLocation();
   const hideNavbar = ['/login', '/register'].includes(location.pathname);
+    const hideUI = ['/login', '/register'].includes(location.pathname);
+
   
   return (
     <div className="bg-gray-900 text-white min-h-screen">
@@ -27,7 +29,7 @@ function Layout({ children }) {
       {children}
       
       {/* AskAce Chatbot - Available on all pages */}
-      <AskAce />
+      {!hideUI && <AskAce />}
     </div>
   );
 }
@@ -48,6 +50,7 @@ export default function App() {
           <Route path="/student-assignments" element={<ProtectedRoute><StudentAssignments /></ProtectedRoute>} />
           <Route path="/forum" element={<ProtectedRoute><Forum /></ProtectedRoute>} />  
           <Route path="/forum/channel/:id" element={<ProtectedRoute><ChannelPage /></ProtectedRoute>} />
+          
         </Routes>
         <ToastContainer position="top-right" autoClose={3000} />
       </Layout>

@@ -1,7 +1,3 @@
-// ============================
-// backend/controllers/askAceController.js
-// ============================
-
 const fetch = require("node-fetch");
 const ChatSession = require("../models/ChatSession");
 
@@ -11,7 +7,6 @@ if (!GEMINI_API_KEY) {
   console.error("⚠️ Gemini API key is missing!");
 }
 
-// Cache for working model (so we don't test every time)
 let cachedWorkingModel = null;
 
 // --- Helper functions ---
@@ -20,7 +15,6 @@ const generateTitle = (message) => {
   return words.slice(0, 5).join(" ") + (words.length > 5 ? "..." : "");
 };
 
-// Categorize query
 function categorizeQuery(message) {
   const lower = message.toLowerCase();
   const studyKeywords = ["study", "exam", "homework", "assignment", "coding", "practice", "learn"];
@@ -31,9 +25,7 @@ function categorizeQuery(message) {
   return "general";
 }
 
-// Generate prompt
 function generatePrompt(message, category, chatHistory = []) {
-  // If the user only sent a greeting, reply with a short greeting and no context
   const trimmed = (message || "").trim();
   if (["hi", "hello", "hey", "hii"].includes(trimmed.toLowerCase())) {
     return `You are AskAce, a friendly AI assistant. Reply with a short greeting only: "Hi! How can I help you today?" Do not reference previous conversation.`;
@@ -53,21 +45,26 @@ function generatePrompt(message, category, chatHistory = []) {
       break;
   }
 
-  // Important instruction: don't add greetings or refer to previous conversation unless user explicitly asks.
-  const instruction = `IMPORTANT: Do NOT add any greeting, sign-off, or mention previous Q&A unless the user explicitly asked to continue. Answer only the question the user asked. If there are steps or points, use bullet points. Keep answer focused and concise.`;
+  const instruction = `IMPORTANT FORMATTING RULES:
+1. For headings: Use **Heading Text** format (will be converted to bold)
+2. For bullet points: Use proper markdown bullets with "- " or "• "
+3. Add blank lines between paragraphs for spacing
+4. NEVER use asterisks (*) alone for emphasis or decoration
+5. NEVER use stars (***) for headings
+6. Keep answers structured and easy to read
+7. Do NOT add greetings or sign-offs unless user explicitly asks
+8. Use **bold** for important terms or emphasis within paragraphs`;
 
   let contextText = "";
   if (chatHistory && chatHistory.length > 0) {
-    // Include previous conversation only if the user explicitly references it in the message (we'll give the model the option but tell it to ignore otherwise)
     const recentHistory = chatHistory.slice(-6);
     contextText = "\n\nPrevious conversation (only use if user asked to continue or referenced it):\n" +
       recentHistory.map(msg => `${msg.sender === 'user' ? 'User' : 'AskAce'}: ${msg.text}`).join("\n");
   }
 
-  return `You are AskAce, a friendly AI assistant. ${guidance}\n\n${instruction}\n\nUser message: "${message}"${contextText}\n\nProvide a clear, helpful response with bullet points where useful. Do NOT include decorative characters (no stars, emojis only if relevant).`;
+  return `You are AskAce, a friendly AI assistant. ${guidance}\n\n${instruction}\n\nUser message: "${message}"${contextText}\n\nProvide a clear, helpful response following the formatting rules above.`;
 }
 
-// Find a working model by trying different options
 async function findWorkingModel() {
   if (cachedWorkingModel) {
     console.log(`✨ Using cached model: ${cachedWorkingModel}`);
@@ -76,7 +73,6 @@ async function findWorkingModel() {
 
   console.log("🔍 Testing available models...");
   
-  // Try these models in order (most common free models)
   const modelsToTry = [
     "gemini-1.5-flash-latest",
     "gemini-1.5-flash",
@@ -119,7 +115,6 @@ async function findWorkingModel() {
   throw new Error("No working models found. Please check your API key.");
 }
 
-// Make API call with the working model
 async function callGeminiAPI(prompt) {
   const modelName = await findWorkingModel();
   
@@ -145,15 +140,38 @@ async function callGeminiAPI(prompt) {
   return data;
 }
 
+// Format AI response for better display
+function formatResponse(text) {
+  if (!text) return text;
+  
+  let formatted = text;
+  
+  // Remove decorative stars/asterisks that aren't markdown
+  formatted = formatted.replace(/^\*+\s*/gm, '');
+  formatted = formatted.replace(/\*+$/gm, '');
+  
+  // Ensure proper spacing between paragraphs
+  formatted = formatted.replace(/\n{3,}/g, '\n\n');
+  
+  // Convert any remaining * bullets to proper markdown bullets
+  formatted = formatted.replace(/^\*\s+/gm, '• ');
+  
+  return formatted.trim();
+}
+
 // --- Main Controller ---
 exports.handleAskAce = async (req, res) => {
   try {
     console.log("📨 Received request");
 
-    const { message, userId, sessionId, isNewSession, chatHistory } = req.body;
+    const { message, userId } = req.body;
 
     if (!message || message.trim() === "") {
       return res.status(400).json({ error: "Message cannot be empty" });
+    }
+
+    if (!userId) {
+      return res.status(400).json({ error: "User ID is required" });
     }
 
     if (!GEMINI_API_KEY) {
@@ -161,6 +179,28 @@ exports.handleAskAce = async (req, res) => {
         error: "Gemini API key is not configured. Please add GEMINI_API_KEY to your .env file." 
       });
     }
+
+    // Get or create user's current session
+    let session = await ChatSession.findOne({ userId }).sort({ lastUpdated: -1 });
+    
+    if (!session) {
+      // Create new session for user
+      const title = generateTitle(message);
+      session = new ChatSession({
+        userId,
+        sessionId: `${userId}_${Date.now()}`,
+        title,
+        messages: [],
+        createdAt: new Date(),
+        lastUpdated: new Date()
+      });
+    }
+
+    // Get chat history for context
+    const chatHistory = session.messages.map(msg => ({
+      sender: msg.sender,
+      text: msg.text
+    }));
 
     const category = categorizeQuery(message);
     const prompt = generatePrompt(message, category, chatHistory);
@@ -170,7 +210,6 @@ exports.handleAskAce = async (req, res) => {
     // Call Gemini API
     const data = await callGeminiAPI(prompt);
 
-    // Extract reply
     let reply = data?.candidates?.[0]?.content?.parts?.[0]?.text;
 
     if (!reply) {
@@ -180,47 +219,25 @@ exports.handleAskAce = async (req, res) => {
       });
     }
 
+    // Format the response
+    reply = formatResponse(reply);
+
     console.log("✅ Success! Reply length:", reply.length);
 
-    // Handle new session
-    if (isNewSession && userId) {
-      const newSessionId = sessionId || Date.now().toString();
-      const title = generateTitle(message);
+    // Save messages to session
+    session.messages.push(
+      { sender: "user", text: message, time: new Date() },
+      { sender: "ai", text: reply, time: new Date() }
+    );
+    session.lastUpdated = new Date();
+    
+    await session.save();
 
-      const initialMessages = [
-        { sender: "ai", text: "Hello! I'm AskAce, your study & motivation assistant. How can I help you today?", time: new Date() },
-        { sender: "user", text: message, time: new Date() },
-        { sender: "ai", text: reply, time: new Date() }
-      ];
-
-      const newSession = new ChatSession({
-        userId,
-        sessionId: newSessionId,
-        title,
-        messages: initialMessages,
-        lastUpdated: new Date()
-      });
-
-      await newSession.save();
-      return res.json({ text: reply, sessionId: newSessionId, title, session: newSession });
-    }
-
-    // Update existing session
-    if (sessionId && userId) {
-      const session = await ChatSession.findOne({ sessionId });
-      if (session) {
-        session.messages.push(
-          { sender: "user", text: message, time: new Date() },
-          { sender: "ai", text: reply, time: new Date() }
-        );
-        session.lastUpdated = new Date();
-        await session.save();
-        return res.json({ text: reply, session });
-      }
-    }
-
-    // Fallback response (no session)
-    res.json({ text: reply });
+    res.json({ 
+      text: reply, 
+      sessionId: session.sessionId,
+      userId: session.userId
+    });
 
   } catch (err) {
     console.error("❌ Error:", err.message);
@@ -235,10 +252,8 @@ exports.handleAskAce = async (req, res) => {
     } else if (err.message.includes("quota")) {
       errorMessage = "⚠️ API quota exceeded. Please try again later.";
     } else if (err.message.includes("No working models")) {
-      errorMessage = "⚠️ No available models found. Your API key may not have access to any Gemini models. Please:\n1. Generate a NEW API key from https://aistudio.google.com/app/apikey\n2. Make sure you're creating a key in the FREE tier\n3. Update your .env file";
+      errorMessage = "⚠️ No available models found. Your API key may not have access to any Gemini models.";
       errorDetails = "Try creating a new API key from Google AI Studio";
-    } else if (err.message.includes("fetch")) {
-      errorMessage = "Network error. Please check your internet connection.";
     }
     
     res.status(500).json({ 
@@ -248,7 +263,47 @@ exports.handleAskAce = async (req, res) => {
   }
 };
 
+// Get user's chat history
+exports.getChatHistory = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    if (!userId) {
+      return res.status(400).json({ error: "User ID is required" });
+    }
 
-// ============================
-// src/components/AskAce.jsx  (Frontend React component - complete single-file with styles)
-// ============================
+    const session = await ChatSession.findOne({ userId }).sort({ lastUpdated: -1 });
+    
+    if (!session) {
+      return res.json({ messages: [] });
+    }
+
+    res.json({ 
+      messages: session.messages,
+      sessionId: session.sessionId 
+    });
+
+  } catch (err) {
+    console.error("❌ Error fetching history:", err.message);
+    res.status(500).json({ error: "Failed to fetch chat history" });
+  }
+};
+
+// Clear user's chat history
+exports.clearChatHistory = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    if (!userId) {
+      return res.status(400).json({ error: "User ID is required" });
+    }
+
+    await ChatSession.deleteMany({ userId });
+    
+    res.json({ message: "Chat history cleared successfully" });
+
+  } catch (err) {
+    console.error("❌ Error clearing history:", err.message);
+    res.status(500).json({ error: "Failed to clear chat history" });
+  }
+};

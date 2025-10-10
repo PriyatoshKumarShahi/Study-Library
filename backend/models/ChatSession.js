@@ -1,4 +1,3 @@
-// backend/models/ChatSession.js
 const mongoose = require("mongoose");
 
 const MessageSchema = new mongoose.Schema({
@@ -15,5 +14,8 @@ const ChatSessionSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
   lastUpdated: { type: Date, default: Date.now }
 });
+
+
+ChatSessionSchema.index({ userId: 1, lastUpdated: -1 });
 
 module.exports = mongoose.model("ChatSession", ChatSessionSchema);
